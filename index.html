@@ -60,6 +60,9 @@
       transition:grid-template-columns 0.3s ease;
       width:100%;
       min-width:0;
+      min-height:200px; /* Ensure minimum height so it's always visible */
+      visibility:visible !important; /* Force visibility */
+      opacity:1 !important; /* Force opacity */
     }
     .timeline-view-wrapper.no-drawer{
       grid-template-columns: 1fr;
@@ -1187,19 +1190,12 @@
       const timelineButtonIsActive = els.viewTimeline && els.viewTimeline.classList.contains("active");
       const isTimelineView = !evidenceIsVisible && timelineButtonIsActive;
       
-      console.log("updateTimelineLayout:", {
-        evidenceIsVisible,
-        timelineButtonIsActive,
-        isTimelineView,
-        timelineViewDisplay: els.timelineView.style.display,
-        timelineViewComputed: window.getComputedStyle(els.timelineView).display
-      });
-      
       // CRITICAL: Always ensure timeline view is visible if we're in timeline view mode
       // This must happen FIRST before any other logic
       if (isTimelineView) {
         els.timelineView.style.display = "grid";
-        console.log("Set timelineView display to grid");
+        // Force reflow to ensure browser recalculates layout
+        els.timelineView.offsetHeight; // Trigger reflow
       }
       
       const hasEventSelected = els.drawer.innerHTML && 
@@ -1208,27 +1204,36 @@
       
       const filtersVisible = document.getElementById("mainContainer")?.classList.contains("filters-visible");
       
-      console.log("Layout state:", { hasEventSelected, filtersVisible, drawerHTML: els.drawer.innerHTML.substring(0, 50) });
-      
       // When filters hidden AND no event selected: timeline expands to full width
       if (!filtersVisible && !hasEventSelected) {
         els.timelineView.classList.add("no-drawer");
         els.drawer.style.display = "none";
-        console.log("Applied no-drawer: filters hidden, no event selected");
       } else {
         els.timelineView.classList.remove("no-drawer");
         els.drawer.style.display = "block";
-        console.log("Removed no-drawer: filters visible or event selected");
       }
+      
+      // Force a final reflow to ensure everything is rendered
+      requestAnimationFrame(() => {
+        els.timelineView.offsetHeight; // Trigger reflow
+      });
     }
 
     function switchToTimeline() {
-      if (els.timelineView) els.timelineView.style.display = "grid";
+      if (els.timelineView) {
+        els.timelineView.style.display = "grid";
+        els.timelineView.style.visibility = "visible";
+        els.timelineView.style.opacity = "1";
+        // Force reflow
+        els.timelineView.offsetHeight;
+      }
       if (els.evidenceView) els.evidenceView.style.display = "none";
       if (els.viewTitle) els.viewTitle.textContent = "Timeline by Phases";
       if (els.viewTimeline) els.viewTimeline.classList.add("active");
       if (els.viewEvidence) els.viewEvidence.classList.remove("active");
-      updateTimelineLayout();
+      requestAnimationFrame(() => {
+        updateTimelineLayout();
+      });
     }
 
     function switchToEvidence() {
@@ -1793,7 +1798,6 @@
       
       filtersToggle.onclick = () => {
         const isCollapsed = filtersSection.classList.contains("collapsed");
-        console.log("Filters toggle clicked, isCollapsed:", isCollapsed);
         if (isCollapsed) {
           filtersSection.classList.remove("collapsed");
           mainContainer.classList.add("filters-visible");
@@ -1808,8 +1812,15 @@
         // CRITICAL: Ensure timeline is visible before updating layout
         if (els.timelineView && els.viewTimeline && els.viewTimeline.classList.contains("active")) {
           els.timelineView.style.display = "grid";
+          els.timelineView.style.visibility = "visible";
+          els.timelineView.style.opacity = "1";
+          // Force immediate reflow
+          els.timelineView.offsetHeight;
         }
-        updateTimelineLayout(); // Update layout when filters are toggled
+        // Use requestAnimationFrame to ensure layout update happens after browser reflow
+        requestAnimationFrame(() => {
+          updateTimelineLayout();
+        });
       };
 
       // View toggle buttons
@@ -1819,10 +1830,12 @@
         
         // Initialize view to Timeline (ensure it's visible)
         // CRITICAL: Set display BEFORE any other operations
-        console.log("Initializing timeline view");
         if (els.timelineView) {
           els.timelineView.style.display = "grid";
-          console.log("Set timelineView display to grid (initialization)");
+          els.timelineView.style.visibility = "visible";
+          els.timelineView.style.opacity = "1";
+          // Force reflow immediately
+          els.timelineView.offsetHeight;
         }
         if (els.evidenceView) {
           els.evidenceView.style.display = "none";
