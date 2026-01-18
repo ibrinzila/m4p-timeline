@@ -29,7 +29,7 @@
     header a{ color:#FFFFFF; text-decoration:underline; }
     main{ display:grid; grid-template-columns: 0px 1fr; gap:12px; padding:12px; transition:grid-template-columns 0.3s ease; }
     main.filters-visible{ grid-template-columns: 360px 1fr; }
-    @media (max-width: 980px){ main{ grid-template-columns:1fr; } main.filters-visible{ grid-template-columns:1fr; } } }
+    @media (max-width: 980px){ main{ grid-template-columns:1fr; } main.filters-visible{ grid-template-columns:1fr; } }
 
     .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
     .controls label{ display:block; font-size:12px; color:var(--text); margin-top:10px; font-weight:500; }
@@ -43,6 +43,31 @@
 
     /* Combined Approach Styles */
     .timeline-container{ position:relative; }
+    
+    /* Responsive timeline layout */
+    .timeline-view-wrapper{
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap:12px;
+      margin-top:10px;
+      transition:grid-template-columns 0.3s ease;
+    }
+    .timeline-view-wrapper.no-drawer{
+      grid-template-columns: 1fr;
+    }
+    .timeline-view-wrapper.drawer-only{
+      grid-template-columns: 420px;
+    }
+    @media (max-width: 1200px){
+      .timeline-view-wrapper{
+        grid-template-columns: 1fr;
+      }
+      .timeline-view-wrapper .drawer{
+        position:relative !important;
+        top:auto !important;
+        margin-top:20px;
+      }
+    }
     
     /* Phase Header */
     .phase-header{ 
@@ -415,7 +440,7 @@
       </div>
       <div id="errorContainer"></div>
       <div id="loadingContainer" class="loading" style="display:none;">Loading timeline data...</div>
-      <div id="timelineView" style="display:grid;grid-template-columns: 1fr 420px; gap:12px; margin-top:10px;">
+      <div id="timelineView" class="timeline-view-wrapper">
         <div class="timeline-container">
           <div id="count" class="count"></div>
           <div id="timeline"></div>
@@ -1141,12 +1166,32 @@
       els.drawer.appendChild(claimsSec);
     }
 
+    function updateTimelineLayout() {
+      if (!els.timelineView || !els.drawer) return;
+      
+      const hasEventSelected = els.drawer.innerHTML && 
+        !els.drawer.innerHTML.includes("Select an event") &&
+        els.drawer.innerHTML.trim().length > 100; // More than just placeholder text
+      
+      const filtersVisible = document.getElementById("mainContainer")?.classList.contains("filters-visible");
+      
+      // When filters hidden AND no event selected: timeline expands to full width
+      if (!filtersVisible && !hasEventSelected) {
+        els.timelineView.classList.add("no-drawer");
+        els.drawer.style.display = "none";
+      } else {
+        els.timelineView.classList.remove("no-drawer");
+        els.drawer.style.display = "block";
+      }
+    }
+
     function switchToTimeline() {
       if (els.timelineView) els.timelineView.style.display = "grid";
       if (els.evidenceView) els.evidenceView.style.display = "none";
       if (els.viewTitle) els.viewTitle.textContent = "Timeline by Phases";
       if (els.viewTimeline) els.viewTimeline.classList.add("active");
       if (els.viewEvidence) els.viewEvidence.classList.remove("active");
+      updateTimelineLayout();
     }
 
     function switchToEvidence() {
@@ -1321,6 +1366,7 @@
       els.timeline.innerHTML = "";
       els.timeline.appendChild(wrap);
       renderQueue();
+      updateTimelineLayout();
     }
 
     function checkMissingFields(event) {
@@ -1391,6 +1437,7 @@
       const claims = getClaimsForEvent(event_id);
 
       els.drawer.innerHTML = "";
+      updateTimelineLayout(); // Update layout when event is selected
 
       const h = document.createElement("h3");
       h.textContent = ev.title;
@@ -1560,6 +1607,7 @@
       }
 
       els.drawer.appendChild(sec3);
+      updateTimelineLayout(); // Ensure layout updates after drawer content is set
     }
 
     async function init() {
@@ -1680,6 +1728,7 @@
         });
         renderTimeline();
         els.drawer.innerHTML = "<h3>Select an event</h3><div class='small'>Click an event on the timeline to see details.</div>";
+        updateTimelineLayout(); // Update layout when drawer is reset
       };
 
       els.toggleClaims.onclick = () => {
