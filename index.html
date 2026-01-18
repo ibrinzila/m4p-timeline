@@ -296,28 +296,65 @@
       opacity:1;
     }
     .controls.collapsed{ 
-      max-width:0; 
-      opacity:0; 
-      padding:0; 
-      border:none;
-      overflow:hidden;
+      display:none !important;
     }
     .filters-toggle{ 
       cursor:pointer; 
-      padding:8px 12px; 
+      padding:8px 16px; 
       background:var(--blue); 
       color:#FFFFFF; 
       border:none; 
       border-radius:6px; 
-      font-size:12px; 
-      margin-bottom:10px;
+      font-size:13px; 
+      font-weight:500;
       display:inline-flex;
       align-items:center;
       gap:6px;
+      transition:background 0.2s;
     }
     .filters-toggle:hover{ background:#003080; }
-    .filters-toggle::before{ content:"▶"; display:inline-block; transition:transform 0.3s; }
+    .filters-toggle::before{ 
+      content:"▶"; 
+      display:inline-block; 
+      transition:transform 0.3s;
+      font-size:10px;
+    }
     .filters-toggle.expanded::before{ transform:rotate(90deg); }
+    
+    /* View Toggle Buttons */
+    .view-toggle-group{
+      display:flex;
+      gap:0;
+      border:1px solid var(--line);
+      border-radius:6px;
+      overflow:hidden;
+      background:var(--panel);
+    }
+    .view-toggle{
+      cursor:pointer;
+      padding:8px 16px;
+      font-size:13px;
+      font-weight:500;
+      border:none;
+      background:var(--panel);
+      color:var(--text);
+      border-right:1px solid var(--line);
+      transition:all 0.2s;
+      white-space:nowrap;
+    }
+    .view-toggle:last-child{
+      border-right:none;
+    }
+    .view-toggle:hover{
+      background:var(--panel-alt);
+    }
+    .view-toggle.active{
+      background:var(--blue);
+      color:#FFFFFF;
+    }
+    .view-toggle.active:hover{
+      background:#003080;
+    }
   </style>
 </head>
 <body>
@@ -360,13 +397,13 @@
 
     <section class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <button class="filters-toggle" id="filtersToggle" title="Show/Hide Filters">Filters</button>
-          <div style="display:flex; gap:8px;">
-            <button class="btn secondary" id="viewTimeline" style="margin:0; padding:6px 12px; font-size:12px;">Timeline</button>
-            <button class="btn secondary" id="viewEvidence" style="margin:0; padding:6px 12px; font-size:12px;">Evidence</button>
+          <div class="view-toggle-group">
+            <button class="view-toggle active" id="viewTimeline" title="Timeline View">Timeline</button>
+            <button class="view-toggle" id="viewEvidence" title="Evidence View">Evidence</button>
           </div>
-          <div class="sub"><b id="viewTitle">Timeline by Phases</b></div>
+          <div class="sub" style="margin:0;"><b id="viewTitle">Timeline by Phases</b></div>
         </div>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <button class="btn secondary refresh-btn" id="refresh" title="Refresh data from source" style="margin:0; padding:6px 12px; font-size:12px;">🔄 Refresh</button>
@@ -1109,10 +1146,8 @@
       els.timelineView.style.display = "grid";
       els.evidenceView.style.display = "none";
       els.viewTitle.textContent = "Timeline by Phases";
-      els.viewTimeline.style.background = "var(--blue)";
-      els.viewTimeline.style.color = "#FFFFFF";
-      els.viewEvidence.style.background = "var(--panel)";
-      els.viewEvidence.style.color = "var(--blue)";
+      els.viewTimeline.classList.add("active");
+      els.viewEvidence.classList.remove("active");
     }
 
     function switchToEvidence() {
@@ -1120,10 +1155,8 @@
       els.timelineView.style.display = "none";
       els.evidenceView.style.display = "block";
       els.viewTitle.textContent = "Evidence View";
-      els.viewTimeline.style.background = "var(--panel)";
-      els.viewTimeline.style.color = "var(--blue)";
-      els.viewEvidence.style.background = "var(--blue)";
-      els.viewEvidence.style.color = "#FFFFFF";
+      els.viewTimeline.classList.remove("active");
+      els.viewEvidence.classList.add("active");
       if (DATA && DATA.sources && els.evidenceTableBody) {
         renderEvidenceView();
       }
@@ -1662,8 +1695,8 @@
       const filtersSection = document.getElementById("filtersSection");
       const mainContainer = document.getElementById("mainContainer");
       
-      // Load saved state from localStorage
-      const filtersVisible = localStorage.getItem("filtersVisible") !== "false"; // Default to false (hidden)
+      // Load saved state from localStorage - default to hidden (false)
+      const filtersVisible = localStorage.getItem("filtersVisible") === "true";
       if (!filtersVisible) {
         filtersSection.classList.add("collapsed");
         mainContainer.classList.remove("filters-visible");
