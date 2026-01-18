@@ -1,0 +1,29 @@
+# Data files (served from Google Sheets)
+data.json
+
+# Local configuration overrides
+config.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Cloudflare Wrangler
+.wrangler/
+.wrangler/

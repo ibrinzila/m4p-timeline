@@ -1,0 +1,11 @@
+{
+  "dataEndpoint": "https://script.google.com/macros/s/AKfycbwkvp2GIw-sCCe-TigavkIkWVUayX0Vn3QjQCQ5HC3AiifvkcZzFgBv3PfLvE5spLQ4JQ/exec",
+  "cacheEnabled": true,
+  "cacheMaxAge": 3600000,
+  "defaultSensitivity": "Internal",
+  "ui": {
+    "projectName": "Moldova for Peace Timeline",
+    "timezone": "Europe/Chisinau",
+    "dateFormat": "dd.mm.yyyy"
+  }
+}

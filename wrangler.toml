@@ -1,0 +1,10 @@
+# Cloudflare Pages Configuration
+# This file is optional - Cloudflare Pages can deploy without it
+# For direct deployment via Wrangler CLI, use: wrangler pages deploy .
+
+name = "m4p-timeline"
+compatibility_date = "2024-01-01"
+
+# Note: Cloudflare Pages uses a different deployment method
+# For Pages, use: wrangler pages deploy . --project-name=m4p-timeline
+# This file is kept for reference but Pages deployment doesn't require it

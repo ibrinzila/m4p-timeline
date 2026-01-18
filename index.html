@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>M4P Timeline — Combined Approach</title>
+  <style>
+    /* Moldova for Peace Color Palette */
+    :root { 
+      --blue: #0046AE;
+      --yellow: #FFD200;
+      --red: #CC092F;
+      --green: #007A50;
+      --brown: #B07E5B;
+      --bg: #FFFBF0;
+      --panel: #FFFFFF;
+      --panel-alt: #FFF8E1;
+      --text: #1A1A1A;
+      --muted: #666666;
+      --line: #E0E0E0;
+      --chip: #F5F5F5;
+      --chip-border: #D0D0D0;
+    }
+    * { box-sizing: border-box; }
+    body{ margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; background:var(--bg); color:var(--text); }
+    header{ padding:18px 16px; border-bottom:2px solid var(--blue); background:linear-gradient(180deg,var(--blue),var(--blue)); color:#FFFFFF; }
+    header h1{ color:#FFFFFF; margin:0 0 6px 0; font-size:18px; font-weight:700; }
+    header .sub{ color:rgba(255,255,255,0.9); font-size:12px; line-height:1.4; }
+    header a{ color:#FFFFFF; text-decoration:underline; }
+    main{ display:grid; grid-template-columns: 0px 1fr; gap:12px; padding:12px; transition:grid-template-columns 0.3s ease; }
+    main.filters-visible{ grid-template-columns: 360px 1fr; }
+    @media (max-width: 980px){ main{ grid-template-columns:1fr; } main.filters-visible{ grid-template-columns:1fr; } } }
+
+    .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+    .controls label{ display:block; font-size:12px; color:var(--text); margin-top:10px; font-weight:500; }
+    .controls input,.controls select{ width:100%; margin-top:6px; padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); font-size:13px; }
+    .controls input:focus,.controls select:focus{ outline:2px solid var(--blue); outline-offset:2px; }
+    .row{ display:flex; gap:8px; margin-top:10px; }
+    .btn{ cursor:pointer; padding:10px 12px; border-radius:8px; border:1px solid var(--red); background:var(--red); color:#FFFFFF; width:100%; font-weight:500; font-size:13px; }
+    .btn:hover{ background:#B00828; }
+    .btn.secondary{ background:var(--panel); border-color:var(--blue); color:var(--blue); }
+    .btn.secondary:hover{ background:var(--blue); color:#FFFFFF; }
+
+    /* Combined Approach Styles */
+    .timeline-container{ position:relative; }
+    
+    /* Phase Header */
+    .phase-header{ 
+      background:linear-gradient(135deg, var(--blue), #003080); 
+      color:#FFFFFF; 
+      padding:15px 20px; 
+      border-radius:8px 8px 0 0; 
+      cursor:pointer; 
+      transition:all 0.3s ease;
+      margin-bottom:0;
+    }
+    .phase-header:hover{ opacity:0.95; }
+    .phase-header.phase-2{ background:linear-gradient(135deg, var(--green), #005a3a); }
+    .phase-header.phase-3{ background:linear-gradient(135deg, var(--red), #9a071f); }
+    .phase-header-content{ display:flex; justify-content:space-between; align-items:center; }
+    .phase-title{ font-weight:700; font-size:16px; margin-bottom:5px; }
+    .phase-description{ font-size:12px; opacity:0.9; }
+    .phase-toggle{ font-size:20px; opacity:0.8; }
+    .phase-narrative{ 
+      display:none; 
+      background:rgba(0,70,174,0.05); 
+      padding:15px 20px; 
+      border:1px solid rgba(0,70,174,0.2); 
+      border-top:none; 
+      border-radius:0 0 8px 8px; 
+      font-size:13px; 
+      line-height:1.6; 
+      color:var(--text);
+      margin-bottom:20px;
+    }
+    .phase-narrative.phase-2{ background:rgba(0,122,80,0.05); border-color:rgba(0,122,80,0.2); }
+    .phase-narrative.phase-3{ background:rgba(204,9,47,0.05); border-color:rgba(204,9,47,0.2); }
+    .phase-narrative.expanded{ display:block; }
+    .phase-narrative strong{ color:var(--blue); }
+    .phase-narrative.phase-2 strong{ color:var(--green); }
+    .phase-narrative.phase-3 strong{ color:var(--red); }
+
+    /* Timeline Spine */
+    .timeline-spine{ 
+      position:relative; 
+      margin-left:40px; 
+      margin-bottom:30px;
+    }
+    .timeline-spine-line{ 
+      position:absolute; 
+      left:-40px; 
+      top:0; 
+      bottom:-30px; 
+      width:4px; 
+      background:var(--blue); 
+      border-radius:2px;
+    }
+    .timeline-spine-line.phase-2{ background:var(--green); }
+    .timeline-spine-line.phase-3{ background:var(--red); }
+
+    /* Quarter Section */
+    .quarter-section{ 
+      margin-bottom:25px; 
+      position:relative;
+    }
+    .quarter-dot{ 
+      position:absolute; 
+      left:-46px; 
+      top:15px; 
+      width:16px; 
+      height:16px; 
+      background:var(--panel-alt); 
+      border:4px solid var(--blue); 
+      border-radius:50%; 
+      z-index:2;
+    }
+    .quarter-dot.phase-2{ border-color:var(--green); }
+    .quarter-dot.phase-3{ border-color:var(--red); }
+    .quarter-box{ 
+      background:var(--panel); 
+      border:2px solid var(--blue); 
+      border-radius:8px; 
+      padding:15px; 
+      margin-left:20px; 
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    }
+    .quarter-box.phase-2{ border-color:var(--green); }
+    .quarter-box.phase-3{ border-color:var(--red); }
+    .quarter-header{ 
+      font-weight:700; 
+      color:var(--blue); 
+      font-size:13px; 
+      margin-bottom:12px; 
+      border-bottom:2px solid var(--line); 
+      padding-bottom:8px;
+    }
+    .quarter-header.phase-2{ color:var(--green); }
+    .quarter-header.phase-3{ color:var(--red); }
+
+    /* Swimlane */
+    .swimlane{ margin-bottom:12px; }
+    .swimlane-header{ 
+      font-weight:600; 
+      color:var(--blue); 
+      font-size:12px; 
+      margin-bottom:8px; 
+      display:flex; 
+      align-items:center; 
+      gap:8px;
+    }
+    .swimlane-header.phase-2{ color:var(--green); }
+    .swimlane-header.phase-3{ color:var(--red); }
+    .swimlane-header::before{ 
+      content:''; 
+      width:20px; 
+      height:3px; 
+      background:var(--blue); 
+      display:inline-block;
+    }
+    .swimlane-header.phase-2::before{ background:var(--green); }
+    .swimlane-header.phase-3::before{ background:var(--red); }
+    .swimlane-header.empty{ 
+      color:var(--muted); 
+      opacity:0.6;
+    }
+    .swimlane-header.empty::before{ background:var(--line); }
+    .swimlane-events{ 
+      display:flex; 
+      gap:8px; 
+      flex-wrap:wrap;
+    }
+    .swimlane-empty{ 
+      color:var(--muted); 
+      font-size:11px; 
+      font-style:italic; 
+      padding-left:28px;
+    }
+
+    /* Event Card */
+    .event-card{ 
+      background:var(--panel-alt); 
+      border:1px solid var(--line); 
+      border-left:3px solid var(--blue); 
+      border-radius:6px; 
+      padding:8px 12px; 
+      font-size:11px; 
+      cursor:pointer; 
+      transition:all 0.2s;
+      min-width:150px;
+      max-width:300px;
+    }
+    .event-card:hover{ 
+      background:var(--yellow); 
+      border-color:var(--blue);
+      transform:translateY(-2px);
+      box-shadow:0 2px 6px rgba(0,0,0,0.15);
+    }
+    .event-card.phase-2{ border-left-color:var(--green); }
+    .event-card.phase-2:hover{ border-color:var(--green); }
+    .event-card.phase-3{ border-left-color:var(--red); }
+    .event-card.phase-3:hover{ border-color:var(--red); }
+    .event-date{ 
+      color:var(--muted); 
+      font-size:10px; 
+      margin-bottom:3px;
+    }
+    .event-title{ 
+      font-weight:500; 
+      margin:3px 0;
+      line-height:1.3;
+    }
+    .event-meta{ 
+      color:var(--muted); 
+      font-size:9px; 
+      margin-top:3px;
+    }
+    .event-meta.verified{ color:var(--green); }
+    .event-meta.needs-review{ color:var(--red); }
+
+    /* Drawer */
+    .drawer h3{ margin:0 0 6px 0; font-size:15px; }
+    .drawer .small{ color:var(--muted); font-size:12px; line-height:1.5; }
+    .drawer .section{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+    .list{ margin:6px 0 0 0; padding-left:18px; color:var(--text); }
+    .list li{ margin:6px 0; color:var(--muted); font-size:12px; line-height:1.4; }
+    .kv{ display:grid; grid-template-columns:120px 1fr; gap:8px; font-size:12px; }
+    .kv div{ color:var(--muted); }
+    .kv b{ color:var(--text); font-weight:600; }
+    .warn{ padding:10px 12px; border-radius:12px; background:#FFF3E0; border:1px solid var(--red); color:var(--red); font-size:12px; margin-top:10px; }
+    .ok{ padding:10px 12px; border-radius:12px; background:#E8F5E9; border:1px solid var(--green); color:var(--green); font-size:12px; margin-top:10px; }
+    .chip{ font-size:11px; color:var(--text); background:var(--chip); border:1px solid var(--chip-border); padding:4px 8px; border-radius:999px; display:inline-block; margin:2px; }
+    .chip.verified{ background:#E8F5E9; border-color:var(--green); color:var(--green); }
+    .chip.needs-review{ background:#FFF3E0; border-color:var(--red); color:var(--red); }
+    .chip.public{ background:#E3F2FD; border-color:var(--blue); color:var(--blue); }
+
+    .count{ color:var(--muted); font-size:12px; margin-bottom:10px; }
+    
+    /* Loading and Error States */
+    .loading{ 
+      padding:20px; 
+      text-align:center; 
+      color:var(--muted); 
+      font-size:14px;
+    }
+    .loading::before{ 
+      content:"⏳ "; 
+      display:inline-block;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{
+      from{ transform:rotate(0deg); }
+      to{ transform:rotate(360deg); }
+    }
+    .error{ 
+      padding:15px; 
+      background:#FFF3E0; 
+      border:2px solid var(--red); 
+      border-radius:8px; 
+      color:var(--red); 
+      margin:10px 0;
+    }
+    .error strong{ display:block; margin-bottom:8px; }
+    .error button{ 
+      margin-top:10px; 
+      padding:8px 16px; 
+      background:var(--red); 
+      color:#FFFFFF; 
+      border:none; 
+      border-radius:6px; 
+      cursor:pointer;
+      font-size:13px;
+    }
+    .error button:hover{ background:#B00828; }
+    .cache-status{ 
+      font-size:11px; 
+      color:var(--muted); 
+      margin-top:5px;
+    }
+    .cache-status.cached{ color:var(--green); }
+    .cache-status.stale{ color:var(--red); }
+    .refresh-btn{ 
+      padding:6px 12px; 
+      font-size:12px; 
+      margin-left:10px;
+    }
+    .refresh-btn:disabled{ 
+      opacity:0.6; 
+      cursor:not-allowed;
+    }
+    
+    /* Collapsible Filters */
+    .controls{ 
+      overflow:hidden; 
+      transition:max-width 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+      max-width:360px;
+      opacity:1;
+    }
+    .controls.collapsed{ 
+      max-width:0; 
+      opacity:0; 
+      padding:0; 
+      border:none;
+      overflow:hidden;
+    }
+    .filters-toggle{ 
+      cursor:pointer; 
+      padding:8px 12px; 
+      background:var(--blue); 
+      color:#FFFFFF; 
+      border:none; 
+      border-radius:6px; 
+      font-size:12px; 
+      margin-bottom:10px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .filters-toggle:hover{ background:#003080; }
+    .filters-toggle::before{ content:"▶"; display:inline-block; transition:transform 0.3s; }
+    .filters-toggle.expanded::before{ transform:rotate(90deg); }
+  </style>
+</head>
+<body>
+
+  <main id="mainContainer">
+    <section class="card controls collapsed" id="filtersSection">
+      <div class="sub"><b>Filters</b></div>
+
+      <label>Search (title/summary/tags)</label>
+      <input id="q" type="text" placeholder="e.g., Dopomoha, Transnistria, crowdfunding" />
+
+      <label>Phase</label>
+      <select id="phase_id"></select>
+
+      <label>Event type</label>
+      <select id="event_type"></select>
+
+      <label>Program area</label>
+      <select id="program_area"></select>
+
+      <label>Status</label>
+      <select id="status"></select>
+
+      <label>Sensitivity (show up to)</label>
+      <select id="sensitivity"></select>
+
+      <label>Primary org</label>
+      <select id="primary_org"></select>
+
+      <div class="row">
+        <button class="btn" id="reset">Reset</button>
+        <button class="btn secondary" id="toggleClaims">Show metrics: OFF</button>
+      </div>
+
+      <div class="section" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+        <div class="sub"><b>Validation queue</b> (status = Needs review)</div>
+        <ul id="queue" class="list"></ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="filters-toggle" id="filtersToggle" title="Show/Hide Filters">Filters</button>
+          <div style="display:flex; gap:8px;">
+            <button class="btn secondary" id="viewTimeline" style="margin:0; padding:6px 12px; font-size:12px;">Timeline</button>
+            <button class="btn secondary" id="viewEvidence" style="margin:0; padding:6px 12px; font-size:12px;">Evidence</button>
+          </div>
+          <div class="sub"><b id="viewTitle">Timeline by Phases</b></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button class="btn secondary refresh-btn" id="refresh" title="Refresh data from source" style="margin:0; padding:6px 12px; font-size:12px;">🔄 Refresh</button>
+          <div>
+            <div class="sub" id="lastUpdated"></div>
+            <div class="cache-status" id="cacheStatus"></div>
+          </div>
+        </div>
+      </div>
+      <div id="errorContainer"></div>
+      <div id="loadingContainer" class="loading" style="display:none;">Loading timeline data...</div>
+      <div id="timelineView" style="display:grid;grid-template-columns: 1fr 420px; gap:12px; margin-top:10px;">
+        <div class="timeline-container">
+          <div id="count" class="count"></div>
+          <div id="timeline"></div>
+        </div>
+        <aside class="card drawer" id="drawer" style="height:fit-content; position:sticky; top:12px;">
+          <h3>Select an event</h3>
+          <div class="small">Click an event on the timeline to see details, linked sources, and optional claims.</div>
+        </aside>
+      </div>
+      <div id="evidenceView" style="display:none; margin-top:10px;">
+        <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+          <input type="text" id="evidenceSearch" placeholder="Search sources by title or notes..." style="flex:1; min-width:200px; padding:8px; border-radius:6px; border:1px solid var(--line);" />
+          <select id="evidenceSourceType" style="padding:8px; border-radius:6px; border:1px solid var(--line);">
+            <option value="">All types</option>
+          </select>
+          <select id="evidenceCredibility" style="padding:8px; border-radius:6px; border:1px solid var(--line);">
+            <option value="">All credibility</option>
+            <option value="Primary">Primary</option>
+            <option value="Secondary">Secondary</option>
+            <option value="Tertiary">Tertiary</option>
+          </select>
+          <select id="evidenceAccess" style="padding:8px; border-radius:6px; border:1px solid var(--line);">
+            <option value="">All access</option>
+            <option value="Public">Public</option>
+            <option value="Internal">Internal</option>
+            <option value="Confidential">Confidential</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="evidenceTable" style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="background:var(--panel-alt); border-bottom:2px solid var(--line);">
+                <th style="padding:10px; text-align:left; cursor:pointer;" data-sort="source_id">Source ID ↕</th>
+                <th style="padding:10px; text-align:left; cursor:pointer;" data-sort="source_type">Type ↕</th>
+                <th style="padding:10px; text-align:left; cursor:pointer;" data-sort="title">Title ↕</th>
+                <th style="padding:10px; text-align:left; cursor:pointer;" data-sort="owner">Owner ↕</th>
+                <th style="padding:10px; text-align:left; cursor:pointer;" data-sort="date_published">Date Published ↕</th>
+                <th style="padding:10px; text-align:left; cursor:pointer;" data-sort="credibility">Credibility ↕</th>
+                <th style="padding:10px; text-align:left; cursor:pointer;" data-sort="access">Access ↕</th>
+              </tr>
+            </thead>
+            <tbody id="evidenceTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const parseDMY = (s) => {
+      if (!s) return null;
+      
+      // Handle if it's already a Date object (from Apps Script serialization issue)
+      if (s instanceof Date) {
+        return s;
+      }
+      
+      // Handle if it's a date string in ISO format
+      if (typeof s === "string" && s.includes("T") || s.includes("GMT")) {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) return d;
+      }
+      
+      // Handle dd.mm.yyyy format
+      if (typeof s === "string" && s.includes(".")) {
+        const parts = s.split(".");
+        if (parts.length === 3) {
+          const dd = parseInt(parts[0], 10);
+          const mm = parseInt(parts[1], 10);
+          const yyyy = parseInt(parts[2], 10);
+          if (dd && mm && yyyy) {
+            return new Date(Date.UTC(yyyy, mm-1, dd));
+          }
+        }
+      }
+      
+      return null;
+    };
+
+    const formatDMY = (s) => s || "";
+
+    const getQuarter = (date) => {
+      if (!date) return null;
+      const month = date.getUTCMonth() + 1;
+      return Math.floor((month - 1) / 3) + 1;
+    };
+
+    const formatQuarter = (date) => {
+      if (!date) return "No date";
+      const year = date.getUTCFullYear();
+      const q = getQuarter(date);
+      return `${year} Q${q}`;
+    };
+
+    const sensitivityRank = (s) => ({ "Public": 1, "Internal": 2, "Confidential": 3 }[s] || 99);
+
+    let DATA = null;
+    let CONFIG = null;
+    let showClaims = false;
+    const phaseExpanded = {}; // Track which phases are expanded
+    let isLoading = false;
+    let lastFetchError = null;
+
+    const els = {
+      q: document.getElementById("q"),
+      phase_id: document.getElementById("phase_id"),
+      event_type: document.getElementById("event_type"),
+      program_area: document.getElementById("program_area"),
+      status: document.getElementById("status"),
+      sensitivity: document.getElementById("sensitivity"),
+      primary_org: document.getElementById("primary_org"),
+      reset: document.getElementById("reset"),
+      toggleClaims: document.getElementById("toggleClaims"),
+      refresh: document.getElementById("refresh"),
+      timeline: document.getElementById("timeline"),
+      drawer: document.getElementById("drawer"),
+      count: document.getElementById("count"),
+      queue: document.getElementById("queue"),
+      lastUpdated: document.getElementById("lastUpdated"),
+      cacheStatus: document.getElementById("cacheStatus"),
+      errorContainer: document.getElementById("errorContainer"),
+      loadingContainer: document.getElementById("loadingContainer"),
+      viewTimeline: document.getElementById("viewTimeline"),
+      viewEvidence: document.getElementById("viewEvidence"),
+      viewTitle: document.getElementById("viewTitle"),
+      timelineView: document.getElementById("timelineView"),
+      evidenceView: document.getElementById("evidenceView"),
+      evidenceTable: document.getElementById("evidenceTable"),
+      evidenceTableBody: document.getElementById("evidenceTableBody"),
+      evidenceSearch: document.getElementById("evidenceSearch"),
+      evidenceSourceType: document.getElementById("evidenceSourceType"),
+      evidenceCredibility: document.getElementById("evidenceCredibility"),
+      evidenceAccess: document.getElementById("evidenceAccess")
+    };
+
+    // Embedded config - works in both file:// and HTTP/HTTPS
+    // On Cloudflare Pages, config.json will be fetched and override this if available
+    const EMBEDDED_CONFIG = {
+      "dataEndpoint": "https://script.google.com/macros/s/AKfycbwkvp2GIw-sCCe-TigavkIkWVUayX0Vn3QjQCQ5HC3AiifvkcZzFgBv3PfLvE5spLQ4JQ/exec",
+      "cacheEnabled": true,
+      "cacheMaxAge": 3600000,
+      "defaultSensitivity": "Internal",
+      "ui": {
+        "projectName": "Moldova for Peace Timeline",
+        "timezone": "Europe/Chisinau",
+        "dateFormat": "dd.mm.yyyy"
+      }
+    };
+
+    // Load configuration
+    async function loadConfig() {
+      // Always start with embedded config (works in file:// protocol)
+      CONFIG = EMBEDDED_CONFIG;
+      
+      // On Cloudflare Pages (HTTP/HTTPS), try to fetch config.json to override
+      if (window.location.protocol !== "file:") {
+        try {
+          const res = await fetch("./config.json");
+          const fetchedConfig = await res.json();
+          if (fetchedConfig.dataEndpoint && fetchedConfig.dataEndpoint !== "YOUR_APPS_SCRIPT_URL_HERE") {
+            console.info("Using config.json from server");
+            CONFIG = fetchedConfig;
+          } else {
+            console.warn("config.json has placeholder URL, using embedded config");
+          }
+        } catch (e) {
+          console.warn("Failed to load config.json, using embedded config", e);
+        }
+      } else {
+        console.info("Using embedded config (file:// protocol)");
+      }
+    }
+    
+    // Fallback to local data.json if Apps Script fails (only works on HTTP/HTTPS, not file://)
+    async function tryFallbackData() {
+      // Skip fallback if we're in file:// protocol (won't work due to CORS)
+      if (window.location.protocol === "file:") {
+        return null;
+      }
+      
+      try {
+        const res = await fetch("./data.json", { cache: "no-store" });
+        const json = await res.json();
+        if (json.phases && json.events) {
+          console.info("Using fallback data.json");
+          return json;
+        }
+      } catch (e) {
+        console.warn("Fallback data.json also unavailable", e);
+      }
+      return null;
+    }
+
+    // Cache management
+    const CACHE_KEY = "m4p_timeline_data";
+    const CACHE_TIME_KEY = "m4p_timeline_data_time";
+    const CACHE_VERSION = "1.0";
+
+    function getCachedData() {
+      if (!CONFIG || !CONFIG.cacheEnabled) return null;
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        const cacheTime = localStorage.getItem(CACHE_TIME_KEY);
+        if (!cached || !cacheTime) return null;
+        
+        const age = Date.now() - parseInt(cacheTime, 10);
+        if (age > CONFIG.cacheMaxAge) return null; // Cache expired
+        
+        const data = JSON.parse(cached);
+        return { data, timestamp: parseInt(cacheTime, 10) };
+      } catch (e) {
+        console.error("Error reading cache", e);
+        clearCache();
+        return null;
+      }
+    }
+
+    function setCachedData(data) {
+      if (!CONFIG || !CONFIG.cacheEnabled) return;
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+      } catch (e) {
+        console.error("Error writing cache", e);
+      }
+    }
+
+    function clearCache() {
+      try {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TIME_KEY);
+      } catch (e) {
+        console.error("Error clearing cache", e);
+      }
+    }
+
+    function updateCacheStatus(timestamp) {
+      if (!timestamp || !els.cacheStatus) return;
+      const age = Date.now() - timestamp;
+      const minutes = Math.floor(age / 60000);
+      const hours = Math.floor(minutes / 60);
+      
+      let text = "";
+      let className = "cache-status";
+      
+      if (minutes < 5) {
+        text = `Updated ${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+        className += " cached";
+      } else if (hours < 1) {
+        text = `Updated ${minutes} minutes ago`;
+        className += " cached";
+      } else if (hours < 24) {
+        text = `Updated ${hours} hour${hours !== 1 ? 's' : ''} ago`;
+        className += hours > 1 ? " stale" : " cached";
+      } else {
+        text = `Updated ${Math.floor(hours / 24)} day${Math.floor(hours / 24) !== 1 ? 's' : ''} ago`;
+        className += " stale";
+      }
+      
+      els.cacheStatus.textContent = text;
+      els.cacheStatus.className = className;
+    }
+
+    function showError(message, retryCallback) {
+      if (!els.errorContainer) return;
+      els.errorContainer.innerHTML = `
+        <div class="error">
+          <strong>⚠️ Error loading data</strong>
+          <div>${message}</div>
+          ${retryCallback ? `<button onclick="(${retryCallback.toString()})()">Retry</button>` : ""}
+        </div>
+      `;
+      els.errorContainer.style.display = "block";
+    }
+
+    function hideError() {
+      if (els.errorContainer) {
+        els.errorContainer.innerHTML = "";
+        els.errorContainer.style.display = "none";
+      }
+    }
+
+    function showLoading() {
+      if (els.loadingContainer) {
+        els.loadingContainer.style.display = "block";
+      }
+    }
+
+    function hideLoading() {
+      if (els.loadingContainer) {
+        els.loadingContainer.style.display = "none";
+      }
+    }
+
+    // Fetch data from endpoint
+    async function fetchFreshData(showLoadingIndicator = false) {
+      if (isLoading) return;
+      isLoading = true;
+      
+      if (showLoadingIndicator) {
+        showLoading();
+      }
+      hideError();
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        
+        const res = await fetch(CONFIG.dataEndpoint, { 
+          cache: "no-store",
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const json = await res.json();
+        
+        // Debug logging
+        console.log("Fetched data:", {
+          hasPhases: !!json.phases,
+          phasesCount: json.phases?.length || 0,
+          hasEvents: !!json.events,
+          eventsCount: json.events?.length || 0,
+          hasSources: !!json.sources,
+          sourcesCount: json.sources?.length || 0,
+          meta: json.meta
+        });
+        
+        // Check for Apps Script error response
+        if (json.error) {
+          throw new Error(json.message || "Apps Script error occurred. Check Apps Script execution log.");
+        }
+        
+        // Validate data structure
+        if (!json.phases || !Array.isArray(json.phases) || json.phases.length === 0) {
+          console.error("Data validation failed: No phases", json);
+          throw new Error("Invalid data: No phases found. Please check Google Sheets structure.");
+        }
+        
+        if (!json.events || !Array.isArray(json.events)) {
+          console.error("Data validation failed: No events array", json);
+          throw new Error("Invalid data: No events found. Please check Google Sheets structure.");
+        }
+        
+        // Log sample data
+        if (json.events.length > 0) {
+          console.log("Sample event:", json.events[0]);
+        } else {
+          console.warn("Events array is empty - check Google Sheets Events sheet has data");
+        }
+        
+        DATA = json;
+        setCachedData(DATA);
+        lastFetchError = null;
+        
+        hideLoading();
+        hideError();
+        
+        return true;
+      } catch (e) {
+        lastFetchError = e;
+        hideLoading();
+        
+        // Try fallback to data.json if Apps Script fails (and we're not already using data.json)
+        if (CONFIG.dataEndpoint !== "./data.json" && CONFIG.dataEndpoint !== "data.json") {
+          console.warn("Apps Script failed, trying fallback data.json");
+          const fallbackData = await tryFallbackData();
+          if (fallbackData) {
+            DATA = fallbackData;
+            setCachedData(DATA);
+            hideError();
+            // Show info message (not error) that we're using fallback
+            if (els.errorContainer) {
+              els.errorContainer.innerHTML = `
+                <div class="error" style="background:#E8F5E9; border-color:var(--green); color:var(--green);">
+                  <strong>ℹ️ Using local data.json</strong>
+                  <div>Apps Script unavailable. Using fallback data.json for local development.</div>
+                  <div style="margin-top:8px; font-size:11px;">To use Apps Script: Verify the URL in config.json and ensure Apps Script is deployed with 'Anyone' access.</div>
+                </div>
+              `;
+              els.errorContainer.style.display = "block";
+            }
+            return true;
+          }
+        }
+        
+        // Both Apps Script and fallback failed - show error
+        if (e.name === "AbortError") {
+          showError("Request timed out. The data source may be slow or unavailable.", () => fetchFreshData(true));
+        } else if (e.message.includes("Failed to fetch") || e.message.includes("NetworkError") || e.message.includes("CORS")) {
+          const errorMsg = "Unable to connect to data source. " + 
+            (CONFIG.dataEndpoint.includes("script.google.com") 
+              ? "Verify the Apps Script is deployed with 'Anyone' access. " 
+              : "") +
+            "If testing locally, ensure data.json exists in the same directory.";
+          showError(errorMsg, () => fetchFreshData(true));
+        } else {
+          showError(e.message || "Unknown error occurred while loading data.", () => fetchFreshData(true));
+        }
+        
+        return false;
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    const uniq = (arr) => [...new Set(arr)].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+    const optionize = (sel, values, allLabel="All") => {
+      sel.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = allLabel;
+      sel.appendChild(opt0);
+      for (const v of values) {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        sel.appendChild(o);
+      }
+    };
+
+    function currentFilters() {
+      return {
+        q: (els.q.value || "").trim().toLowerCase(),
+        phase_id: els.phase_id.value,
+        event_type: els.event_type.value,
+        program_area: els.program_area.value,
+        status: els.status.value,
+        sensitivityMax: els.sensitivity.value
+      };
+    }
+
+    function filterEvents(events) {
+      const f = currentFilters();
+      return events.filter(ev => {
+        // sensitivity threshold
+        if (f.sensitivityMax) {
+          if (sensitivityRank(ev.sensitivity) > sensitivityRank(f.sensitivityMax)) return false;
+        }
+        // dropdown filters
+        if (f.phase_id && ev.phase_id !== f.phase_id) return false;
+        if (f.event_type && ev.event_type !== f.event_type) return false;
+        if (f.program_area && ev.program_area !== f.program_area) return false;
+        if (f.status && ev.status !== f.status) return false;
+        if (f.primary_org && ev.primary_org !== f.primary_org) return false;
+
+        // search
+        if (f.q) {
+          const hay = [
+            ev.title, ev.summary_1line, ev.status, ev.program_area,
+            ev.event_type, (ev.tags || []).join(" ")
+          ].join(" ").toLowerCase();
+          if (!hay.includes(f.q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function getPhaseForEvent(event) {
+      return DATA.phases.find(p => p.phase_id === event.phase_id) || null;
+    }
+
+    function groupEventsByPhaseAndQuarter(events) {
+      const phaseMap = new Map();
+      
+      // Initialize phases
+      DATA.phases.sort((a,b) => a.order - b.order).forEach(phase => {
+        phaseMap.set(phase.phase_id, {
+          phase,
+          quarters: new Map()
+        });
+      });
+
+      // Group events
+      let skippedCount = 0;
+      let skippedReasons = { noPhase: 0, noDate: 0 };
+      
+      events.forEach(ev => {
+        const phase = phaseMap.get(ev.phase_id);
+        if (!phase) {
+          skippedCount++;
+          skippedReasons.noPhase++;
+          console.warn(`Event skipped - no matching phase: ${ev.event_id} (phase_id: ${ev.phase_id})`);
+          return;
+        }
+
+        const date = parseDMY(ev.date_start);
+        if (!date) {
+          skippedCount++;
+          skippedReasons.noDate++;
+          console.warn(`Event skipped - invalid date: ${ev.event_id} (date_start: ${ev.date_start}, type: ${typeof ev.date_start})`);
+          return;
+        }
+
+        const quarterKey = formatQuarter(date);
+        if (!phase.quarters.has(quarterKey)) {
+          phase.quarters.set(quarterKey, {
+            quarterKey,
+            date,
+            programAreas: new Map()
+          });
+        }
+
+        const quarter = phase.quarters.get(quarterKey);
+        const area = ev.program_area || "Other";
+        if (!quarter.programAreas.has(area)) {
+          quarter.programAreas.set(area, []);
+        }
+        quarter.programAreas.get(area).push(ev);
+      });
+      
+      if (skippedCount > 0) {
+        console.warn(`Skipped ${skippedCount} events:`, skippedReasons);
+      }
+
+      // Sort quarters and events within
+      phaseMap.forEach((phaseData, phaseId) => {
+        const sortedQuarters = Array.from(phaseData.quarters.values())
+          .sort((a, b) => a.date - b.date);
+        phaseData.quarters = new Map(sortedQuarters.map(q => [q.quarterKey, q]));
+        
+        phaseData.quarters.forEach(quarter => {
+          quarter.programAreas.forEach((events, area) => {
+            events.sort((a, b) => (parseDMY(a.date_start) || 0) - (parseDMY(b.date_start) || 0));
+          });
+        });
+      });
+
+      return phaseMap;
+    }
+
+    function getAllProgramAreas() {
+      return uniq(DATA.events.map(e => e.program_area));
+    }
+
+    function getSourcesForEvent(event_id) {
+      const links = DATA.event_source_map.filter(x => x.event_id === event_id);
+      return links.map(l => {
+        const src = DATA.sources.find(s => s.source_id === l.source_id);
+        return { ...l, source: src };
+      });
+    }
+
+    function getClaimsForEvent(event_id) {
+      const claims = DATA.claims.filter(c => c.event_id === event_id);
+      return claims.map(c => {
+        const cs = DATA.claim_sources.filter(x => x.claim_id === c.claim_id).map(x => {
+          const src = DATA.sources.find(s => s.source_id === x.source_id);
+          return { ...x, source: src };
+        });
+        return { claim: c, sources: cs };
+      });
+    }
+
+    function getEventsForSource(source_id) {
+      const links = DATA.event_source_map.filter(x => x.source_id === source_id);
+      return links.map(l => {
+        const ev = DATA.events.find(e => e.event_id === l.event_id);
+        return { ...l, event: ev };
+      });
+    }
+
+    function getClaimsForSource(source_id) {
+      const links = DATA.claim_sources.filter(x => x.source_id === source_id);
+      return links.map(l => {
+        const claim = DATA.claims.find(c => c.claim_id === l.claim_id);
+        return { ...l, claim: claim };
+      });
+    }
+
+    let evidenceSortColumn = null;
+    let evidenceSortDirection = "asc";
+
+    function renderEvidenceView() {
+      if (!DATA || !DATA.sources || !els.evidenceTableBody || !els.evidenceSearch || !els.evidenceSourceType || !els.evidenceCredibility || !els.evidenceAccess) return;
+
+      const searchTerm = (els.evidenceSearch.value || "").toLowerCase();
+      const sourceTypeFilter = els.evidenceSourceType.value;
+      const credibilityFilter = els.evidenceCredibility.value;
+      const accessFilter = els.evidenceAccess.value;
+
+      let filtered = DATA.sources.filter(src => {
+        if (searchTerm) {
+          const searchable = [
+            src.title || "",
+            src.excerpt_or_notes || "",
+            src.source_id || ""
+          ].join(" ").toLowerCase();
+          if (!searchable.includes(searchTerm)) return false;
+        }
+        if (sourceTypeFilter && src.source_type !== sourceTypeFilter) return false;
+        if (credibilityFilter && src.credibility !== credibilityFilter) return false;
+        if (accessFilter && src.access !== accessFilter) return false;
+        return true;
+      });
+
+      // Apply sorting
+      if (evidenceSortColumn) {
+        filtered.sort((a, b) => {
+          let aVal = a[evidenceSortColumn] || "";
+          let bVal = b[evidenceSortColumn] || "";
+          if (typeof aVal === "string") {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+          }
+          if (evidenceSortDirection === "asc") {
+            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+          } else {
+            return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+          }
+        });
+      }
+
+      if (!els.evidenceTableBody) return;
+      
+      els.evidenceTableBody.innerHTML = "";
+      if (filtered.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="7" style="padding:20px; text-align:center; color:var(--muted);">No sources found matching filters.</td>`;
+        els.evidenceTableBody.appendChild(row);
+      } else {
+        filtered.forEach(src => {
+          const row = document.createElement("tr");
+          row.style.cursor = "pointer";
+          row.style.borderBottom = "1px solid var(--line)";
+          row.onclick = () => openSourceDrawer(src.source_id);
+          row.onmouseenter = () => row.style.background = "var(--panel-alt)";
+          row.onmouseleave = () => row.style.background = "";
+          row.innerHTML = `
+            <td style="padding:10px;">${src.source_id || ""}</td>
+            <td style="padding:10px;">${src.source_type || ""}</td>
+            <td style="padding:10px;">${src.title || ""}</td>
+            <td style="padding:10px;">${src.owner || ""}</td>
+            <td style="padding:10px;">${src.date_published || ""}</td>
+            <td style="padding:10px;">${src.credibility || ""}</td>
+            <td style="padding:10px;">${src.access || ""}</td>
+          `;
+          els.evidenceTableBody.appendChild(row);
+        });
+      }
+    }
+
+    function openSourceDrawer(source_id) {
+      const src = DATA.sources.find(s => s.source_id === source_id);
+      if (!src) return;
+
+      const eventLinks = getEventsForSource(source_id);
+      const claimLinks = getClaimsForSource(source_id);
+
+      els.drawer.innerHTML = "";
+
+      const h = document.createElement("h3");
+      h.textContent = src.title || src.source_id;
+      els.drawer.appendChild(h);
+
+      const kv = document.createElement("div");
+      kv.className = "kv";
+      kv.innerHTML = `
+        <div><b>Source ID</b></div><div>${src.source_id}</div>
+        <div><b>Type</b></div><div>${src.source_type || ""}</div>
+        <div><b>Owner</b></div><div>${src.owner || ""}</div>
+        <div><b>Date Published</b></div><div>${src.date_published || ""}</div>
+        <div><b>Credibility</b></div><div>${src.credibility || ""}</div>
+        <div><b>Access</b></div><div>${src.access || ""}</div>
+        ${src.url_or_drive_path ? `<div><b>URL/Path</b></div><div>${src.url_or_drive_path}</div>` : ""}
+      `;
+      els.drawer.appendChild(kv);
+
+      if (src.excerpt_or_notes) {
+        const notesDiv = document.createElement("div");
+        notesDiv.className = "section";
+        notesDiv.innerHTML = `<div class="sub"><b>Notes/Excerpt</b></div><div class="small">${src.excerpt_or_notes}</div>`;
+        els.drawer.appendChild(notesDiv);
+      }
+
+      const eventsSec = document.createElement("div");
+      eventsSec.className = "section";
+      eventsSec.innerHTML = `<div class="sub"><b>Events Supported by This Source</b> (${eventLinks.length})</div>`;
+      const eventsUl = document.createElement("ul");
+      eventsUl.className = "list";
+      if (eventLinks.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No events linked to this source.";
+        eventsUl.appendChild(li);
+      } else {
+        eventLinks.forEach(link => {
+          const li = document.createElement("li");
+          li.style.cursor = "pointer";
+          li.onclick = () => {
+            // Switch to timeline view and open event
+            switchToTimeline();
+            openDrawer(link.event_id);
+          };
+          li.innerHTML = `<strong>${link.event?.title || link.event_id}</strong> — ${link.relevance || ""}${link.pointer ? ` | ${link.pointer}` : ""}${link.notes ? ` | ${link.notes}` : ""}`;
+          eventsUl.appendChild(li);
+        });
+      }
+      eventsSec.appendChild(eventsUl);
+      els.drawer.appendChild(eventsSec);
+
+      const claimsSec = document.createElement("div");
+      claimsSec.className = "section";
+      claimsSec.innerHTML = `<div class="sub"><b>Claims Supported by This Source</b> (${claimLinks.length})</div>`;
+      const claimsUl = document.createElement("ul");
+      claimsUl.className = "list";
+      if (claimLinks.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No claims linked to this source.";
+        claimsUl.appendChild(li);
+      } else {
+        claimLinks.forEach(link => {
+          const li = document.createElement("li");
+          li.innerHTML = `<strong>${link.claim?.claim_text || link.claim_id}</strong> — ${link.pointer || ""} | confidence: ${link.confidence || ""}${link.notes ? ` | ${link.notes}` : ""}`;
+          claimsUl.appendChild(li);
+        });
+      }
+      claimsSec.appendChild(claimsUl);
+      els.drawer.appendChild(claimsSec);
+    }
+
+    function switchToTimeline() {
+      if (!els.timelineView || !els.evidenceView || !els.viewTitle || !els.viewTimeline || !els.viewEvidence) return;
+      els.timelineView.style.display = "grid";
+      els.evidenceView.style.display = "none";
+      els.viewTitle.textContent = "Timeline by Phases";
+      els.viewTimeline.style.background = "var(--blue)";
+      els.viewTimeline.style.color = "#FFFFFF";
+      els.viewEvidence.style.background = "var(--panel)";
+      els.viewEvidence.style.color = "var(--blue)";
+    }
+
+    function switchToEvidence() {
+      if (!els.timelineView || !els.evidenceView || !els.viewTitle || !els.viewTimeline || !els.viewEvidence) return;
+      els.timelineView.style.display = "none";
+      els.evidenceView.style.display = "block";
+      els.viewTitle.textContent = "Evidence View";
+      els.viewTimeline.style.background = "var(--panel)";
+      els.viewTimeline.style.color = "var(--blue)";
+      els.viewEvidence.style.background = "var(--blue)";
+      els.viewEvidence.style.color = "#FFFFFF";
+      if (DATA && DATA.sources && els.evidenceTableBody) {
+        renderEvidenceView();
+      }
+    }
+
+    function togglePhaseNarrative(phaseId) {
+      phaseExpanded[phaseId] = !phaseExpanded[phaseId];
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      if (!DATA || !DATA.events) {
+        console.error("Cannot render: DATA or DATA.events is missing", DATA);
+        els.count.textContent = "No data available";
+        return;
+      }
+      
+      console.log("Rendering timeline:", {
+        totalEvents: DATA.events.length,
+        totalPhases: DATA.phases?.length || 0,
+        sampleEvent: DATA.events[0]
+      });
+      
+      const events = filterEvents(DATA.events);
+      console.log("After filtering:", {
+        filteredCount: events.length,
+        filters: currentFilters()
+      });
+      
+      els.count.textContent = `${events.length} event(s) shown`;
+
+      const grouped = groupEventsByPhaseAndQuarter(events);
+      const allAreas = getAllProgramAreas();
+      
+      console.log("Grouped data:", {
+        phasesWithData: Array.from(grouped.keys()),
+        totalQuarters: Array.from(grouped.values()).reduce((sum, p) => sum + p.quarters.size, 0)
+      });
+
+      const wrap = document.createElement("div");
+      
+      DATA.phases.sort((a,b) => a.order - b.order).forEach((phase, phaseIdx) => {
+        const phaseData = grouped.get(phase.phase_id);
+        if (!phaseData || phaseData.quarters.size === 0) return;
+
+        const phaseClass = `phase-${phase.order}`;
+        const isExpanded = phaseExpanded[phase.phase_id] || false;
+
+        // Phase Header
+        const phaseHeader = document.createElement("div");
+        phaseHeader.className = `phase-header ${phaseClass}`;
+        phaseHeader.style.backgroundColor = phase.color;
+        phaseHeader.onclick = () => togglePhaseNarrative(phase.phase_id);
+        
+        const headerContent = document.createElement("div");
+        headerContent.className = "phase-header-content";
+        
+        const headerText = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "phase-title";
+        title.textContent = `PHASE ${phase.order}: ${phase.name}`;
+        const desc = document.createElement("div");
+        desc.className = "phase-description";
+        desc.textContent = phase.description;
+        headerText.appendChild(title);
+        headerText.appendChild(desc);
+        
+        const toggle = document.createElement("div");
+        toggle.className = "phase-toggle";
+        toggle.textContent = isExpanded ? "▲" : "▼";
+        
+        headerContent.appendChild(headerText);
+        headerContent.appendChild(toggle);
+        phaseHeader.appendChild(headerContent);
+        wrap.appendChild(phaseHeader);
+
+        // Phase Narrative
+        const narrative = document.createElement("div");
+        narrative.className = `phase-narrative ${phaseClass} ${isExpanded ? "expanded" : ""}`;
+        narrative.innerHTML = `<strong>Narrative:</strong> ${phase.narrative}`;
+        wrap.appendChild(narrative);
+
+        // Timeline Spine
+        const spine = document.createElement("div");
+        spine.className = "timeline-spine";
+        
+        const spineLine = document.createElement("div");
+        spineLine.className = `timeline-spine-line ${phaseClass}`;
+        spine.appendChild(spineLine);
+
+        // Quarter Sections
+        phaseData.quarters.forEach((quarter, quarterKey) => {
+          const quarterSection = document.createElement("div");
+          quarterSection.className = "quarter-section";
+          
+          const dot = document.createElement("div");
+          dot.className = `quarter-dot ${phaseClass}`;
+          quarterSection.appendChild(dot);
+          
+          const quarterBox = document.createElement("div");
+          quarterBox.className = `quarter-box ${phaseClass}`;
+          
+          const quarterHeader = document.createElement("div");
+          quarterHeader.className = `quarter-header ${phaseClass}`;
+          quarterHeader.textContent = quarterKey;
+          quarterBox.appendChild(quarterHeader);
+
+          // Swimlanes for each program area
+          allAreas.forEach(area => {
+            const eventsInArea = quarter.programAreas.get(area) || [];
+            const swimlane = document.createElement("div");
+            swimlane.className = "swimlane";
+            
+            const laneHeader = document.createElement("div");
+            laneHeader.className = `swimlane-header ${phaseClass} ${eventsInArea.length === 0 ? "empty" : ""}`;
+            laneHeader.textContent = area;
+            swimlane.appendChild(laneHeader);
+            
+            if (eventsInArea.length === 0) {
+              const empty = document.createElement("div");
+              empty.className = "swimlane-empty";
+              empty.textContent = "No events in this period";
+              swimlane.appendChild(empty);
+            } else {
+              const eventsContainer = document.createElement("div");
+              eventsContainer.className = "swimlane-events";
+              
+              eventsInArea.forEach(ev => {
+                const card = document.createElement("div");
+                card.className = `event-card ${phaseClass}`;
+                card.onclick = () => openDrawer(ev.event_id);
+                
+                const date = document.createElement("div");
+                date.className = "event-date";
+                date.textContent = formatDMY(ev.date_start);
+                
+                const title = document.createElement("div");
+                title.className = "event-title";
+                title.textContent = ev.title;
+                
+                const meta = document.createElement("div");
+                meta.className = `event-meta ${ev.status === "Verified" ? "verified" : ev.status === "Needs review" ? "needs-review" : ""}`;
+                meta.textContent = `${ev.event_type} • ${ev.status}`;
+                
+                card.appendChild(date);
+                card.appendChild(title);
+                card.appendChild(meta);
+                eventsContainer.appendChild(card);
+              });
+              
+              swimlane.appendChild(eventsContainer);
+            }
+            
+            quarterBox.appendChild(swimlane);
+          });
+          
+          quarterSection.appendChild(quarterBox);
+          spine.appendChild(quarterSection);
+        });
+
+        wrap.appendChild(spine);
+      });
+
+      els.timeline.innerHTML = "";
+      els.timeline.appendChild(wrap);
+      renderQueue();
+    }
+
+    function checkMissingFields(event) {
+      const missing = [];
+      if (!event.phase_id || event.phase_id.trim() === "") missing.push("phase_id");
+      if (!event.date_start || event.date_start.trim() === "") missing.push("date_start");
+      if (!event.program_area || event.program_area.trim() === "") missing.push("program_area");
+      if (!event.summary_1line || event.summary_1line.trim() === "") missing.push("summary_1line");
+      return missing;
+    }
+
+    function checkEvidenceStatus(event) {
+      const srcLinks = getSourcesForEvent(event.event_id);
+      const hasSources = srcLinks.length > 0;
+      const hasPrimaryEvidence = srcLinks.some(link => 
+        link.relevance && link.relevance.toLowerCase().includes("primary")
+      );
+      return { hasSources, hasPrimaryEvidence };
+    }
+
+    function renderQueue() {
+      const f = currentFilters();
+      const queue = DATA.events
+        .filter(e => e.status === "Needs review")
+        .filter(e => !f.sensitivityMax || sensitivityRank(e.sensitivity) <= sensitivityRank(f.sensitivityMax))
+        .sort((a,b)=> (parseDMY(a.date_start)||0) - (parseDMY(b.date_start)||0));
+
+      els.queue.innerHTML = "";
+      for (const ev of queue) {
+        const li = document.createElement("li");
+        li.style.position = "relative";
+        li.style.paddingLeft = "24px";
+        li.style.marginBottom = "8px";
+        
+        // Check missing fields and evidence
+        const missingFields = checkMissingFields(ev);
+        const evidenceStatus = checkEvidenceStatus(ev);
+        
+        // Build indicator icons
+        let indicators = "";
+        if (missingFields.includes("phase_id") || missingFields.includes("date_start")) {
+          indicators += '<span style="color:var(--red); font-size:14px; position:absolute; left:0;" title="Missing required field: ' + missingFields.filter(f => f === "phase_id" || f === "date_start").join(", ") + '">🔴</span>';
+        } else if (missingFields.includes("program_area") || missingFields.includes("summary_1line")) {
+          indicators += '<span style="color:var(--yellow); font-size:14px; position:absolute; left:0;" title="Missing field: ' + missingFields.filter(f => f === "program_area" || f === "summary_1line").join(", ") + '">🟡</span>';
+        }
+        
+        if (!evidenceStatus.hasSources) {
+          indicators += '<span style="color:var(--red); font-size:12px; margin-left:4px;" title="No sources linked">⚠️</span>';
+        } else if (!evidenceStatus.hasPrimaryEvidence) {
+          indicators += '<span style="color:var(--yellow); font-size:12px; margin-left:4px;" title="No primary evidence sources">⚠️</span>';
+        }
+        
+        li.innerHTML = `${indicators} <strong>${ev.event_id}</strong> — ${ev.date_start || "??.??.????"} — ${ev.title}`;
+        els.queue.appendChild(li);
+      }
+      if (!queue.length) {
+        const li = document.createElement("li");
+        li.textContent = "No items in queue (at current sensitivity view).";
+        els.queue.appendChild(li);
+      }
+    }
+
+    function openDrawer(event_id) {
+      const ev = DATA.events.find(e => e.event_id === event_id);
+      if (!ev) return;
+      
+      const srcLinks = getSourcesForEvent(event_id);
+      const claims = getClaimsForEvent(event_id);
+
+      els.drawer.innerHTML = "";
+
+      const h = document.createElement("h3");
+      h.textContent = ev.title;
+      els.drawer.appendChild(h);
+
+      const small = document.createElement("div");
+      small.className = "small";
+      small.textContent = ev.date_end ? `${ev.date_start} – ${ev.date_end}` : ev.date_start;
+      els.drawer.appendChild(small);
+
+      const kv = document.createElement("div");
+      kv.className = "kv";
+      kv.innerHTML = `
+        <div><b>Event ID</b></div><div>${ev.event_id}</div>
+        <div><b>Phase</b></div><div>${DATA.phases.find(p => p.phase_id === ev.phase_id)?.name || ev.phase_id}</div>
+        <div><b>Type</b></div><div>${ev.event_type}</div>
+        <div><b>Area</b></div><div>${ev.program_area}</div>
+        <div><b>Status</b></div><div>${ev.status}</div>
+        <div><b>Sensitivity</b></div><div>${ev.sensitivity}</div>
+        <div><b>Org</b></div><div>${ev.primary_org}</div>
+        ${ev.location ? `<div><b>Location</b></div><div>${ev.location}</div>` : ""}
+      `;
+      els.drawer.appendChild(kv);
+
+      if (ev.status === "Needs review") {
+        const w = document.createElement("div");
+        w.className = "warn";
+        w.textContent = "Needs review: date and/or details should be confirmed with a primary source pointer.";
+        els.drawer.appendChild(w);
+      } else {
+        const ok = document.createElement("div");
+        ok.className = "ok";
+        ok.textContent = "Verified: backed by at least one primary source in this dataset.";
+        els.drawer.appendChild(ok);
+      }
+
+      if (ev.tags && ev.tags.length) {
+        const tagsDiv = document.createElement("div");
+        tagsDiv.className = "section";
+        tagsDiv.innerHTML = `<div class="sub"><b>Tags</b></div>`;
+        ev.tags.forEach(tag => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = tag;
+          tagsDiv.appendChild(chip);
+        });
+        els.drawer.appendChild(tagsDiv);
+      }
+
+      const sec1 = document.createElement("div");
+      sec1.className = "section";
+      sec1.innerHTML = `<div class="sub"><b>Summary</b></div><div class="small">${ev.summary_1line || ""}</div>`;
+      els.drawer.appendChild(sec1);
+
+      const sec2 = document.createElement("div");
+      sec2.className = "section";
+      sec2.innerHTML = `<div class="sub"><b>Sources</b></div>`;
+      const ul = document.createElement("ul");
+      ul.className = "list";
+      for (const l of srcLinks) {
+        const li = document.createElement("li");
+        const src = l.source || {};
+        li.textContent = `${src.title || l.source_id} — ${l.relevance}${l.pointer ? " | " + l.pointer : ""}${l.notes ? " | " + l.notes : ""}`;
+        ul.appendChild(li);
+      }
+      if (!srcLinks.length) {
+        const li = document.createElement("li");
+        li.textContent = "No sources linked yet.";
+        ul.appendChild(li);
+      }
+      sec2.appendChild(ul);
+      els.drawer.appendChild(sec2);
+
+      const sec3 = document.createElement("div");
+      sec3.className = "section";
+      sec3.innerHTML = `<div class="sub"><b>Claims (metrics/outcomes)</b></div>`;
+
+      const info = document.createElement("div");
+      info.className = "small";
+      info.textContent = showClaims ? "Showing claims (if any) linked to this event." : "Metrics hidden. Toggle \"Show metrics\" to display claims.";
+      sec3.appendChild(info);
+
+      const cul = document.createElement("ul");
+      cul.className = "list";
+      
+      if (showClaims) {
+        // Filter claims by sensitivity (respect current sensitivity filter)
+        const f = currentFilters();
+        const filteredClaims = claims.filter(c => {
+          const claimSensitivity = c.claim.sensitivity || "Public";
+          // If claim is Confidential, hide it unless user has access to Confidential
+          if (claimSensitivity === "Confidential") {
+            return f.sensitivityMax && sensitivityRank(f.sensitivityMax) >= sensitivityRank("Confidential");
+          }
+          // Apply same sensitivity threshold logic as events
+          if (f.sensitivityMax) {
+            return sensitivityRank(claimSensitivity) <= sensitivityRank(f.sensitivityMax);
+          }
+          return true;
+        });
+        
+        for (const c of filteredClaims) {
+          const li = document.createElement("li");
+          li.style.marginBottom = "12px";
+          
+          // Build claim header with type, value, unit
+          const claimHeader = document.createElement("div");
+          claimHeader.style.fontWeight = "600";
+          claimHeader.style.marginBottom = "4px";
+          
+          let headerText = "";
+          if (c.claim.claim_type) {
+            headerText += `[${c.claim.claim_type}] `;
+          }
+          
+          // Add value if available
+          if (c.claim.value_num !== undefined && c.claim.value_num !== null && c.claim.value_num !== "") {
+            headerText += `Value: ${c.claim.value_num}`;
+            if (c.claim.unit) {
+              headerText += ` ${c.claim.unit}`;
+            }
+          } else if (c.claim.value_text) {
+            headerText += `Value: ${c.claim.value_text}`;
+            if (c.claim.unit) {
+              headerText += ` ${c.claim.unit}`;
+            }
+          }
+          
+          if (headerText) {
+            claimHeader.textContent = headerText;
+            li.appendChild(claimHeader);
+          }
+          
+          // Claim text
+          const claimText = document.createElement("div");
+          claimText.textContent = c.claim.claim_text;
+          claimText.style.marginBottom = "4px";
+          li.appendChild(claimText);
+          
+          // Verification status
+          const verification = document.createElement("div");
+          verification.style.fontSize = "11px";
+          verification.style.color = "var(--muted)";
+          verification.textContent = `Verification: ${c.claim.verification || "Not specified"}`;
+          li.appendChild(verification);
+          
+          // Sources
+          if (c.sources && c.sources.length) {
+            const sub = document.createElement("ul");
+            sub.className = "list";
+            sub.style.marginTop = "6px";
+            for (const cs of c.sources) {
+              const sli = document.createElement("li");
+              sli.textContent = `${cs.source?.title || cs.source_id} | ${cs.pointer || ""} | confidence: ${cs.confidence || ""}`;
+              sub.appendChild(sli);
+            }
+            li.appendChild(sub);
+          }
+          cul.appendChild(li);
+        }
+        if (!filteredClaims.length) {
+          const li = document.createElement("li");
+          li.textContent = "No claims linked to this event yet (or filtered by sensitivity).";
+          cul.appendChild(li);
+        }
+        sec3.appendChild(cul);
+      }
+
+      els.drawer.appendChild(sec3);
+    }
+
+    async function init() {
+      // Load configuration first
+      await loadConfig();
+      
+      // Check cache first
+      if (CONFIG.cacheEnabled) {
+        const cached = getCachedData();
+        if (cached) {
+          DATA = cached.data;
+          renderTimeline();
+          updateLastUpdated(cached.timestamp);
+          updateCacheStatus(cached.timestamp);
+          // Background refresh
+          fetchFreshData(false).then(success => {
+            if (success) {
+              updateLastUpdated(Date.now());
+              updateCacheStatus(Date.now());
+              renderTimeline();
+              hideError(); // Clear any previous errors
+            } else {
+              // Show warning that we're using cached data, but don't block UI
+              if (lastFetchError && els.errorContainer) {
+                const warning = document.createElement("div");
+                warning.className = "error";
+                warning.style.background = "#FFF3E0";
+                warning.style.borderColor = "var(--yellow)";
+                warning.style.color = "var(--muted)";
+                warning.innerHTML = `
+                  <strong>⚠️ Using cached data</strong>
+                  <div>Unable to fetch fresh data: ${lastFetchError.message}</div>
+                  <button onclick="document.getElementById('refresh').click()">Refresh Now</button>
+                `;
+                els.errorContainer.innerHTML = "";
+                els.errorContainer.appendChild(warning);
+              }
+            }
+          });
+        } else {
+          // No cache, fetch fresh
+          const success = await fetchFreshData(true);
+          if (success) {
+            updateLastUpdated(Date.now());
+            updateCacheStatus(Date.now());
+          } else {
+            // No cache and fetch failed - show error
+            showError("Unable to load data. Please check your configuration and try again.", () => fetchFreshData(true));
+          }
+        }
+      } else {
+        // Cache disabled, fetch fresh
+        const success = await fetchFreshData(true);
+        if (success) {
+          updateLastUpdated(Date.now());
+        }
+      }
+
+      if (!DATA || !DATA.phases || DATA.phases.length === 0) {
+        showError("No phases found in data. Please check Google Sheets structure and ensure Phases sheet exists.", () => fetchFreshData(true));
+        return;
+      }
+
+      // Update last updated display
+      if (DATA.meta && DATA.meta.generated_at) {
+        els.lastUpdated.textContent = `Data generated: ${DATA.meta.generated_at}`;
+      } else {
+        els.lastUpdated.textContent = "";
+      }
+
+      // Populate filters
+      optionize(els.phase_id, DATA.phases.map(p => `${p.name} (${p.phase_id})`), "All phases");
+      optionize(els.event_type, uniq(DATA.events.map(e => e.event_type)));
+      optionize(els.program_area, uniq(DATA.events.map(e => e.program_area)));
+      optionize(els.status, uniq(DATA.events.map(e => e.status)));
+      optionize(els.primary_org, uniq(DATA.events.map(e => e.primary_org).filter(Boolean)));
+      
+      // Populate Evidence View filters
+      if (DATA.sources && els.evidenceSourceType) {
+        optionize(els.evidenceSourceType, uniq(DATA.sources.map(s => s.source_type)), "All types");
+      }
+
+      // Sensitivity filter
+      els.sensitivity.innerHTML = "";
+      const sensOpts = ["Public", "Internal", "Confidential"];
+      const o0 = document.createElement("option");
+      o0.value = "";
+      o0.textContent = "All (incl. Confidential)";
+      els.sensitivity.appendChild(o0);
+      for (const s of sensOpts) {
+        const o = document.createElement("option");
+        o.value = s;
+        o.textContent = `Up to: ${s}`;
+        els.sensitivity.appendChild(o);
+      }
+      els.sensitivity.value = "Internal";
+
+      // Initialize phase expanded state
+      DATA.phases.forEach(p => {
+        phaseExpanded[p.phase_id] = false; // Start collapsed
+      });
+
+      const rerender = () => renderTimeline();
+      [els.q, els.phase_id, els.event_type, els.program_area, els.status, els.sensitivity, els.primary_org].forEach(el => 
+        el.addEventListener("input", rerender)
+      );
+
+      els.reset.onclick = () => {
+        els.q.value = "";
+        els.phase_id.value = "";
+        els.event_type.value = "";
+        els.program_area.value = "";
+        els.status.value = "";
+        els.sensitivity.value = "Internal";
+        els.primary_org.value = "";
+        DATA.phases.forEach(p => {
+          phaseExpanded[p.phase_id] = false;
+        });
+        renderTimeline();
+        els.drawer.innerHTML = "<h3>Select an event</h3><div class='small'>Click an event on the timeline to see details.</div>";
+      };
+
+      els.toggleClaims.onclick = () => {
+        showClaims = !showClaims;
+        els.toggleClaims.textContent = `Show metrics: ${showClaims ? "ON" : "OFF"}`;
+        renderTimeline();
+      };
+
+      // Filters toggle functionality
+      const filtersToggle = document.getElementById("filtersToggle");
+      const filtersSection = document.getElementById("filtersSection");
+      const mainContainer = document.getElementById("mainContainer");
+      
+      // Load saved state from localStorage
+      const filtersVisible = localStorage.getItem("filtersVisible") !== "false"; // Default to false (hidden)
+      if (!filtersVisible) {
+        filtersSection.classList.add("collapsed");
+        mainContainer.classList.remove("filters-visible");
+        filtersToggle.classList.remove("expanded");
+      } else {
+        filtersSection.classList.remove("collapsed");
+        mainContainer.classList.add("filters-visible");
+        filtersToggle.classList.add("expanded");
+      }
+      
+      filtersToggle.onclick = () => {
+        const isCollapsed = filtersSection.classList.contains("collapsed");
+        if (isCollapsed) {
+          filtersSection.classList.remove("collapsed");
+          mainContainer.classList.add("filters-visible");
+          filtersToggle.classList.add("expanded");
+          localStorage.setItem("filtersVisible", "true");
+        } else {
+          filtersSection.classList.add("collapsed");
+          mainContainer.classList.remove("filters-visible");
+          filtersToggle.classList.remove("expanded");
+          localStorage.setItem("filtersVisible", "false");
+        }
+      };
+
+      // View toggle buttons
+      if (els.viewTimeline && els.viewEvidence) {
+        els.viewTimeline.onclick = switchToTimeline;
+        els.viewEvidence.onclick = switchToEvidence;
+        
+        // Initialize view to Timeline
+        switchToTimeline();
+      }
+
+      // Evidence View filters and search
+      if (els.evidenceSearch && els.evidenceSourceType && els.evidenceCredibility && els.evidenceAccess) {
+        [els.evidenceSearch, els.evidenceSourceType, els.evidenceCredibility, els.evidenceAccess].forEach(el => {
+          if (el) el.addEventListener("input", renderEvidenceView);
+        });
+      }
+
+      // Evidence View table sorting
+      document.querySelectorAll("#evidenceTable th[data-sort]").forEach(th => {
+        th.onclick = () => {
+          const column = th.getAttribute("data-sort");
+          if (evidenceSortColumn === column) {
+            evidenceSortDirection = evidenceSortDirection === "asc" ? "desc" : "asc";
+          } else {
+            evidenceSortColumn = column;
+            evidenceSortDirection = "asc";
+          }
+          // Update all headers
+          document.querySelectorAll("#evidenceTable th[data-sort]").forEach(h => {
+            h.textContent = h.textContent.replace(/ ↕| ↑| ↓/g, "") + " ↕";
+          });
+          th.textContent = th.textContent.replace(/ ↕| ↑| ↓/g, "") + (evidenceSortDirection === "asc" ? " ↑" : " ↓");
+          renderEvidenceView();
+        };
+      });
+
+      els.refresh.onclick = async () => {
+        els.refresh.disabled = true;
+        els.refresh.textContent = "🔄 Refreshing...";
+        clearCache();
+        const success = await fetchFreshData(true);
+        if (success) {
+          updateLastUpdated(Date.now());
+          updateCacheStatus(Date.now());
+          renderTimeline();
+        }
+        els.refresh.disabled = false;
+        els.refresh.textContent = "🔄 Refresh";
+      };
+
+      // Only render if we have data
+      if (DATA) {
+        renderTimeline();
+      }
+    }
+    
+    function updateLastUpdated(timestamp) {
+      if (!timestamp || !els.lastUpdated) return;
+      if (DATA && DATA.meta && DATA.meta.generated_at) {
+        els.lastUpdated.textContent = `Data generated: ${DATA.meta.generated_at}`;
+      } else {
+        const date = new Date(timestamp);
+        const formatted = date.toLocaleString("en-GB", { 
+          day: "2-digit", 
+          month: "2-digit", 
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        els.lastUpdated.textContent = `Last updated: ${formatted}`;
+      }
+    }
+
+    init().catch(err => {
+      document.body.innerHTML = `<pre style="color:var(--red);padding:16px;">Failed to initialize timeline: ${err.message}</pre>`;
+      console.error(err);
+    });
+  </script>
+</body>
+</html>

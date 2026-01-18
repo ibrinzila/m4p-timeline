@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>M4P Timeline — Simple View</title>
+  <style>
+    /* Moldova for Peace Color Palette */
+    :root { 
+      --blue: #0046AE;        /* Primary - headers, key elements */
+      --yellow: #FFD200;      /* Accent - highlights, positive */
+      --red: #CC092F;         /* Urgent/action - buttons, warnings */
+      --green: #007A50;       /* Success/verified - status, confirmed */
+      --brown: #B07E5B;      /* Supporting - secondary elements */
+      
+      /* Light theme hierarchy */
+      --bg: #FFFBF0;          /* Warm light background */
+      --panel: #FFFFFF;       /* White cards */
+      --panel-alt: #FFF8E1;   /* Light yellow tint for alternates */
+      --text: #1A1A1A;       /* Dark text */
+      --muted: #666666;       /* Secondary text */
+      --line: #E0E0E0;       /* Borders */
+      --chip: #F5F5F5;       /* Chip backgrounds */
+      --chip-border: #D0D0D0;
+    }
+    body{ margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; background:var(--bg); color:var(--text); }
+    header{ padding:18px 16px; border-bottom:2px solid var(--blue); background:linear-gradient(180deg,var(--blue),var(--blue)); color:#FFFFFF; }
+    header h1{ color:#FFFFFF; }
+    header .sub{ color:rgba(255,255,255,0.9); }
+    h1{ margin:0 0 6px 0; font-size:18px; font-weight:700; color:var(--blue); }
+    .sub{ color:var(--muted); font-size:12px; line-height:1.4; }
+    main{ display:grid; grid-template-columns: 360px 1fr; gap:12px; padding:12px; }
+    @media (max-width: 980px){ main{ grid-template-columns:1fr; } }
+
+    .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+    .controls label{ display:block; font-size:12px; color:var(--text); margin-top:10px; font-weight:500; }
+    .controls input,.controls select{ width:100%; margin-top:6px; padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); }
+    .controls input:focus,.controls select:focus{ outline:2px solid var(--blue); outline-offset:2px; }
+    .row{ display:flex; gap:8px; margin-top:10px; }
+    .btn{ cursor:pointer; padding:10px 12px; border-radius:8px; border:1px solid var(--red); background:var(--red); color:#FFFFFF; width:100%; font-weight:500; }
+    .btn:hover{ background:#B00828; }
+    .btn.secondary{ background:var(--panel); border-color:var(--blue); color:var(--blue); }
+    .btn.secondary:hover{ background:var(--blue); color:#FFFFFF; }
+
+    .timeline{ padding:0; margin:0; list-style:none; }
+    .year{ margin:0 0 10px 0; padding:10px 12px; border-radius:12px; background:var(--panel-alt); border-left:4px solid var(--blue); }
+    .year h2{ margin:0; font-size:14px; color:var(--blue); font-weight:700; }
+    .event{ margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:var(--panel); cursor:pointer; transition:all 0.2s; }
+    .event:hover{ background:var(--panel-alt); border-color:var(--blue); box-shadow:0 2px 6px rgba(0,70,174,0.15); }
+    .topline{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .date{ font-size:12px; color:var(--muted); white-space:nowrap; }
+    .title{ font-size:13px; font-weight:650; margin:0; }
+    .meta{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+    .chip{ font-size:11px; color:var(--text); background:var(--chip); border:1px solid var(--chip-border); padding:4px 8px; border-radius:999px; }
+    .chip.verified{ background:#E8F5E9; border-color:var(--green); color:var(--green); }
+    .chip.needs-review{ background:#FFF3E0; border-color:var(--red); color:var(--red); }
+    .chip.public{ background:#E3F2FD; border-color:var(--blue); color:var(--blue); }
+    .summary{ margin-top:8px; color:var(--muted); font-size:12px; line-height:1.4; }
+
+    .drawer h3{ margin:0 0 6px 0; font-size:15px; }
+    .drawer .small{ color:var(--muted); font-size:12px; line-height:1.5; }
+    .drawer .section{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+    .list{ margin:6px 0 0 0; padding-left:18px; color:var(--text); }
+    .list li{ margin:6px 0; color:var(--muted); font-size:12px; line-height:1.4; }
+    .kv{ display:grid; grid-template-columns:120px 1fr; gap:8px; font-size:12px; }
+    .kv div{ color:var(--muted); }
+    .kv b{ color:var(--text); font-weight:600; }
+    .warn{ padding:10px 12px; border-radius:12px; background:#FFF3E0; border:1px solid var(--red); color:var(--red); font-size:12px; margin-top:10px; }
+    .ok{ padding:10px 12px; border-radius:12px; background:#E8F5E9; border:1px solid var(--green); color:var(--green); font-size:12px; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Moldova for Peace — Simple Timeline View</h1>
+    <div class="sub">
+      Simple chronological timeline view (alternative). Data loaded from <code>data.json</code>.
+      Dates are in <b>dd.mm.yyyy</b>. Some items are marked <b>Needs review</b>.
+      <br><a href="index.html" style="color:#FFFFFF; text-decoration:underline; margin-top:8px; display:inline-block;">← Back to main dashboard (Phases + Timeline + Swimlanes)</a> | <a href="timeline-options.html" style="color:#FFFFFF; text-decoration:underline; margin-top:8px; display:inline-block;">View all visualization options →</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="card controls">
+      <div class="sub"><b>Filters</b></div>
+
+      <label>Search (title/summary/tags)</label>
+      <input id="q" type="text" placeholder="e.g., Dopomoha, Transnistria, crowdfunding" />
+
+      <label>Event type</label>
+      <select id="event_type"></select>
+
+      <label>Program area</label>
+      <select id="program_area"></select>
+
+      <label>Status</label>
+      <select id="status"></select>
+
+      <label>Sensitivity (show up to)</label>
+      <select id="sensitivity"></select>
+
+      <div class="row">
+        <button class="btn" id="reset">Reset</button>
+        <button class="btn" id="toggleClaims">Show metrics: OFF</button>
+      </div>
+
+      <div class="section" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+        <div class="sub"><b>Validation queue</b> (status = Needs review)</div>
+        <ul id="queue" class="list"></ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="topline">
+        <div class="sub"><b>Chronological timeline</b></div>
+        <div class="sub" id="lastUpdated"></div>
+      </div>
+      <div style="display:grid;grid-template-columns: 1fr 420px; gap:12px; margin-top:10px;">
+        <div>
+          <div id="count" class="sub"></div>
+          <div id="timeline"></div>
+        </div>
+        <aside class="card drawer" id="drawer" style="height:fit-content;">
+          <h3>Select an event</h3>
+          <div class="small">Click an event on the left to see details, linked sources, and optional claims.</div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const parseDMY = (s) => {
+      if (!s) return null;
+      const [dd, mm, yyyy] = s.split(".").map(x => parseInt(x,10));
+      if (!dd || !mm || !yyyy) return null;
+      return new Date(Date.UTC(yyyy, mm-1, dd));
+    };
+
+    const formatDMY = (s) => s || "";
+
+    const sensitivityRank = (s) => ({ "Public": 1, "Internal": 2, "Confidential": 3 }[s] || 99);
+
+    let DATA = null;
+    let showClaims = false;
+
+    const els = {
+      q: document.getElementById("q"),
+      event_type: document.getElementById("event_type"),
+      program_area: document.getElementById("program_area"),
+      status: document.getElementById("status"),
+      sensitivity: document.getElementById("sensitivity"),
+      reset: document.getElementById("reset"),
+      toggleClaims: document.getElementById("toggleClaims"),
+      timeline: document.getElementById("timeline"),
+      drawer: document.getElementById("drawer"),
+      count: document.getElementById("count"),
+      queue: document.getElementById("queue"),
+      lastUpdated: document.getElementById("lastUpdated")
+    };
+
+    const uniq = (arr) => [...new Set(arr)].filter(Boolean).sort((a,b)=>a.localeCompare(b));
+    const optionize = (sel, values, allLabel="All") => {
+      sel.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = allLabel;
+      sel.appendChild(opt0);
+      for (const v of values) {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        sel.appendChild(o);
+      }
+    };
+
+    function currentFilters() {
+      return {
+        q: (els.q.value || "").trim().toLowerCase(),
+        event_type: els.event_type.value,
+        program_area: els.program_area.value,
+        status: els.status.value,
+        sensitivityMax: els.sensitivity.value
+      };
+    }
+
+    function filterEvents(events) {
+      const f = currentFilters();
+      return events.filter(ev => {
+        // sensitivity threshold
+        if (f.sensitivityMax) {
+          if (sensitivityRank(ev.sensitivity) > sensitivityRank(f.sensitivityMax)) return false;
+        }
+        // dropdown filters
+        if (f.event_type && ev.event_type !== f.event_type) return false;
+        if (f.program_area && ev.program_area !== f.program_area) return false;
+        if (f.status && ev.status !== f.status) return false;
+
+        // search
+        if (f.q) {
+          const hay = [
+            ev.title, ev.summary_1line, ev.status, ev.program_area,
+            ev.event_type, (ev.tags || []).join(" ")
+          ].join(" ").toLowerCase();
+          if (!hay.includes(f.q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function groupByYear(events) {
+      const map = new Map();
+      for (const ev of events) {
+        const d = parseDMY(ev.date_start);
+        const y = d ? d.getUTCFullYear() : 0;
+        if (!map.has(y)) map.set(y, []);
+        map.get(y).push(ev);
+      }
+      // sort years ascending, 0 last
+      const years = [...map.keys()].sort((a,b)=>a-b).filter(y=>y!==0);
+      if (map.has(0)) years.push(0);
+      return years.map(y => ({ year: y, events: map.get(y).sort((a,b)=> (parseDMY(a.date_start)||0) - (parseDMY(b.date_start)||0)) }));
+    }
+
+    function getSourcesForEvent(event_id) {
+      const links = DATA.event_source_map.filter(x => x.event_id === event_id);
+      return links.map(l => {
+        const src = DATA.sources.find(s => s.source_id === l.source_id);
+        return { ...l, source: src };
+      });
+    }
+
+    function getClaimsForEvent(event_id) {
+      const claims = DATA.claims.filter(c => c.event_id === event_id);
+      return claims.map(c => {
+        const cs = DATA.claim_sources.filter(x => x.claim_id === c.claim_id).map(x => {
+          const src = DATA.sources.find(s => s.source_id === x.source_id);
+          return { ...x, source: src };
+        });
+        return { claim: c, sources: cs };
+      });
+    }
+
+    function renderTimeline() {
+      const events = filterEvents(DATA.events)
+        .sort((a,b)=> (parseDMY(a.date_start)||0) - (parseDMY(b.date_start)||0));
+
+      els.count.textContent = `${events.length} event(s) shown`;
+      const grouped = groupByYear(events);
+
+      const wrap = document.createElement("div");
+      for (const g of grouped) {
+        const yearBox = document.createElement("div");
+        yearBox.className = "year";
+        const h = document.createElement("h2");
+        h.textContent = g.year === 0 ? "No date" : String(g.year);
+        yearBox.appendChild(h);
+
+        for (const ev of g.events) {
+          const item = document.createElement("div");
+          item.className = "event";
+          item.onclick = () => openDrawer(ev.event_id);
+
+          const top = document.createElement("div");
+          top.className = "topline";
+
+          const title = document.createElement("p");
+          title.className = "title";
+          title.textContent = ev.title;
+
+          const date = document.createElement("div");
+          date.className = "date";
+          date.textContent = ev.date_end ? `${formatDMY(ev.date_start)} – ${formatDMY(ev.date_end)}` : formatDMY(ev.date_start);
+
+          top.appendChild(title);
+          top.appendChild(date);
+
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          for (const chip of [ev.event_type, ev.program_area]) {
+            const c = document.createElement("span");
+            c.className = "chip";
+            c.textContent = chip;
+            meta.appendChild(c);
+          }
+          // Status chip with color
+          const statusChip = document.createElement("span");
+          statusChip.className = "chip " + (ev.status === "Verified" ? "verified" : ev.status === "Needs review" ? "needs-review" : "");
+          statusChip.textContent = ev.status;
+          meta.appendChild(statusChip);
+          // Sensitivity chip
+          const sensChip = document.createElement("span");
+          sensChip.className = "chip " + (ev.sensitivity === "Public" ? "public" : "");
+          sensChip.textContent = ev.sensitivity;
+          meta.appendChild(sensChip);
+          if (ev.tags && ev.tags.length) {
+            const t = document.createElement("span");
+            t.className = "chip";
+            t.textContent = `tags: ${ev.tags.join(", ")}`;
+            meta.appendChild(t);
+          }
+
+          const sum = document.createElement("div");
+          sum.className = "summary";
+          sum.textContent = ev.summary_1line || "";
+
+          item.appendChild(top);
+          item.appendChild(meta);
+          item.appendChild(sum);
+          yearBox.appendChild(item);
+        }
+
+        wrap.appendChild(yearBox);
+      }
+
+      els.timeline.innerHTML = "";
+      els.timeline.appendChild(wrap);
+      renderQueue();
+    }
+
+    function renderQueue() {
+      const f = currentFilters();
+      // queue respects sensitivity threshold, but ignores other filters
+      const queue = DATA.events
+        .filter(e => e.status === "Needs review")
+        .filter(e => !f.sensitivityMax || sensitivityRank(e.sensitivity) <= sensitivityRank(f.sensitivityMax))
+        .sort((a,b)=> (parseDMY(a.date_start)||0) - (parseDMY(b.date_start)||0));
+
+      els.queue.innerHTML = "";
+      for (const ev of queue) {
+        const li = document.createElement("li");
+        li.textContent = `${ev.date_start || "??.??.????"} — ${ev.title}`;
+        els.queue.appendChild(li);
+      }
+      if (!queue.length) {
+        const li = document.createElement("li");
+        li.textContent = "No items in queue (at current sensitivity view).";
+        els.queue.appendChild(li);
+      }
+    }
+
+    function openDrawer(event_id) {
+      const ev = DATA.events.find(e => e.event_id === event_id);
+      const srcLinks = getSourcesForEvent(event_id);
+      const claims = getClaimsForEvent(event_id);
+
+      els.drawer.innerHTML = "";
+
+      const h = document.createElement("h3");
+      h.textContent = ev.title;
+      els.drawer.appendChild(h);
+
+      const small = document.createElement("div");
+      small.className = "small";
+      small.textContent = ev.date_end ? `${ev.date_start} – ${ev.date_end}` : ev.date_start;
+      els.drawer.appendChild(small);
+
+      const kv = document.createElement("div");
+      kv.className = "kv";
+      kv.innerHTML = `
+        <div><b>Event ID</b></div><div>${ev.event_id}</div>
+        <div><b>Type</b></div><div>${ev.event_type}</div>
+        <div><b>Area</b></div><div>${ev.program_area}</div>
+        <div><b>Status</b></div><div>${ev.status}</div>
+        <div><b>Sensitivity</b></div><div>${ev.sensitivity}</div>
+        <div><b>Org</b></div><div>${ev.primary_org}</div>
+      `;
+      els.drawer.appendChild(kv);
+
+      if (ev.status === "Needs review") {
+        const w = document.createElement("div");
+        w.className = "warn";
+        w.textContent = "Needs review: date and/or details should be confirmed with a primary source pointer.";
+        els.drawer.appendChild(w);
+      } else {
+        const ok = document.createElement("div");
+        ok.className = "ok";
+        ok.textContent = "Verified: backed by at least one primary source in this dataset.";
+        els.drawer.appendChild(ok);
+      }
+
+      const sec1 = document.createElement("div");
+      sec1.className = "section";
+      sec1.innerHTML = `<div class="sub"><b>Summary</b></div><div class="small">${ev.summary_1line || ""}</div>`;
+      els.drawer.appendChild(sec1);
+
+      const sec2 = document.createElement("div");
+      sec2.className = "section";
+      sec2.innerHTML = `<div class="sub"><b>Sources</b></div>`;
+      const ul = document.createElement("ul");
+      ul.className = "list";
+      for (const l of srcLinks) {
+        const li = document.createElement("li");
+        const src = l.source || {};
+        li.textContent = `${src.title || l.source_id} — ${l.relevance}${l.pointer ? " | " + l.pointer : ""}${l.notes ? " | " + l.notes : ""}`;
+        ul.appendChild(li);
+      }
+      if (!srcLinks.length) {
+        const li = document.createElement("li");
+        li.textContent = "No sources linked yet.";
+        ul.appendChild(li);
+      }
+      sec2.appendChild(ul);
+      els.drawer.appendChild(sec2);
+
+      const sec3 = document.createElement("div");
+      sec3.className = "section";
+      sec3.innerHTML = `<div class="sub"><b>Claims (metrics/outcomes)</b></div>`;
+
+      const info = document.createElement("div");
+      info.className = "small";
+      info.textContent = showClaims ? "Showing claims (if any) linked to this event." : "Metrics hidden. Toggle \"Show metrics\" to display claims.";
+      sec3.appendChild(info);
+
+      if (showClaims) {
+        const cul = document.createElement("ul");
+        cul.className = "list";
+        for (const c of claims) {
+          const li = document.createElement("li");
+          li.textContent = `${c.claim.claim_text} [${c.claim.verification}]`;
+          // list sources beneath
+          if (c.sources && c.sources.length) {
+            const sub = document.createElement("ul");
+            sub.className = "list";
+            sub.style.marginTop = "6px";
+            for (const cs of c.sources) {
+              const sli = document.createElement("li");
+              sli.textContent = `${cs.source?.title || cs.source_id} | ${cs.pointer || ""} | confidence: ${cs.confidence || ""}`;
+              sub.appendChild(sli);
+            }
+            li.appendChild(sub);
+          }
+          cul.appendChild(li);
+        }
+        if (!claims.length) {
+          const li = document.createElement("li");
+          li.textContent = "No claims linked to this event yet.";
+          cul.appendChild(li);
+        }
+        sec3.appendChild(cul);
+      }
+
+      els.drawer.appendChild(sec3);
+    }
+
+    // Embedded data - works without a server
+    const EMBEDDED_DATA = {"meta":{"project":"Moldova for Peace (M4P) Timeline Prototype","timezone":"Europe/Chisinau","date_format":"dd.mm.yyyy","generated_at":"18.01.2026","notes":"Built from documents available in this ChatGPT project. Some items have approximate dates and are marked Needs review."},"sources":[{"source_id":"SRC-M4P2","source_type":"Doc","title":"Moldova for Peace 2.0: Strategic Evolution Anchored in Foundational Values and Principles","owner":"Internal","date_published":"","url_or_drive_path":"turn0file0","credibility":"Primary","access":"Internal","excerpt_or_notes":"Strategic evolution: initiative→movement, strategic initiatives for 2025, Dopomoha model by end of 2024."},{"source_id":"SRC-STATUTE","source_type":"Doc","title":"Statutul Inițiativei Moldova pentru Pace (Chișinău 2023)","owner":"Internal","date_published":"01.01.2023","url_or_drive_path":"turn0file2","credibility":"Primary","access":"Internal","excerpt_or_notes":"Constituted 26.02.2022; vision/mission/values; departments; governance by consensus."},{"source_id":"SRC-CF","source_type":"Doc","title":"Crowdfunding: Moldova for Peace // Solidarity for Ukraine","owner":"Internal/Public text","date_published":"","url_or_drive_path":"turn0file1","credibility":"Primary","access":"Internal","excerpt_or_notes":"Crowdfunding launched in Feb (with invasion), collected 96,000+ EUR; Dopomoha.md launched 11 March; Community Center 151."},{"source_id":"SRC-TRANS","source_type":"Doc","title":"The Situation in Transnistria","owner":"Internal","date_published":"","url_or_drive_path":"turn0file5","credibility":"Primary","access":"Internal","excerpt_or_notes":"Energy crisis timeline: gas/heat cuts from 01.01; rolling blackouts from 03.01; escalation by 07.01; security council 08.01."},{"source_id":"SRC-BRAIN","source_type":"Doc","title":"9 Jan 2025 | Brainstorming: Campanie de Solidaritate pentru Transnistria","owner":"Internal","date_published":"09.01.2025","url_or_drive_path":"turn0file3","credibility":"Primary","access":"Internal","excerpt_or_notes":"Meeting attendees + plan: draft Thu (Ion), review Fri, publish Sat; key messages: solidarity, No One Left Behind, Positive Peace."}],"events":[{"event_id":"EV-2022-02-26-FOUNDING","date_start":"26.02.2022","date_end":"","title":"Moldova pentru Pace is constituted as a civic initiative (platform for organizing and coordinating assistance).","event_type":"Pivot","program_area":"Humanitarian aid","summary_1line":"Constituted as an un-institutionalized civic initiative, anchored in rights-based assistance and integration objectives.","status":"Verified","sensitivity":"Public","primary_org":"M4P","tags":["founding","governance","rights-based"]},{"event_id":"EV-2022-02-24-CF-LAUNCH","date_start":"24.02.2022","date_end":"","title":"Crowdfunding campaign launched (approx. late Feb 2022, aligned with first invasion weeks).","event_type":"Campaign","program_area":"Humanitarian aid","summary_1line":"Crowdfunding initiated to fund emergency response and operational capacity.","status":"Needs review","sensitivity":"Public","primary_org":"M4P","tags":["fundraising","emergency","crowdfunding"]},{"event_id":"EV-2022-03-11-DOPOMOHA","date_start":"11.03.2022","date_end":"","title":"Dopomoha.md platform launched.","event_type":"Project","program_area":"Humanitarian aid","summary_1line":"Digital platform launched to support assistance coordination; cited as key channel for reaching people in need.","status":"Verified","sensitivity":"Public","primary_org":"Dopomoha","tags":["platform","coordination","digital"]},{"event_id":"EV-2023-01-01-STATUTE","date_start":"01.01.2023","date_end":"","title":"Statute document published/compiled (year 2023).","event_type":"Internal governance","program_area":"Organisational development","summary_1line":"Statute defines vision, mission, values, departments, and consensus-based governance.","status":"Needs review","sensitivity":"Internal","primary_org":"M4P","tags":["statute","values","mission","structure"]},{"event_id":"EV-2024-12-31-DOPOMOHA-MODEL","date_start":"31.12.2024","date_end":"","title":"Dopomoha model positioned as caretaker of M4P legacy/assets and a social innovation vehicle (by end of 2024).","event_type":"Pivot","program_area":"Social cohesion","summary_1line":"Strategic evolution: Dopomoha as caretaker + experimentation with sustainability and fundraising models.","status":"Needs review","sensitivity":"Internal","primary_org":"M4P / Dopomoha","tags":["sustainability","social innovation","governance"]},{"event_id":"EV-2025-01-01-TRANS-CRISIS","date_start":"01.01.2025","date_end":"","title":"Transnistria energy crisis: gas-consumption limits and household heating/hot-water cuts begin.","event_type":"Crisis","program_area":"Peacebuilding","summary_1line":"Households/companies face heat/hot-water cuts; power supply strain begins.","status":"Verified","sensitivity":"Public","primary_org":"Context","tags":["transnistria","energy","humanitarian context"]},{"event_id":"EV-2025-01-03-BLACKOUTS","date_start":"03.01.2025","date_end":"","title":"Rolling blackouts instituted in Transnistria (initially 1 hour each evening).","event_type":"Crisis","program_area":"Peacebuilding","summary_1line":"Grid failures lead to controlled outages; schedule-based power cuts begin.","status":"Verified","sensitivity":"Public","primary_org":"Context","tags":["transnistria","blackouts","energy"]},{"event_id":"EV-2025-01-07-8H","date_start":"07.01.2025","date_end":"","title":"Rolling blackouts increase to 8 hours/day (4h morning + 4h evening).","event_type":"Crisis","program_area":"Peacebuilding","summary_1line":"Outages escalate substantially; impacts extend to water pressure and services.","status":"Verified","sensitivity":"Public","primary_org":"Context","tags":["transnistria","blackouts","services"]},{"event_id":"EV-2025-01-08-SEC-COUNCIL","date_start":"08.01.2025","date_end":"","title":"Transnistrian security council meeting discusses flawed forecasting for energy shortfall.","event_type":"Crisis","program_area":"Peacebuilding","summary_1line":"Forecasting model based on 2009 proved wrong; electric heating demand contributed to system strain.","status":"Verified","sensitivity":"Public","primary_org":"Context","tags":["transnistria","forecasting","narratives"]},{"event_id":"EV-2025-01-09-M4P-BRAINSTORM","date_start":"09.01.2025","date_end":"","title":"M4P brainstorming meeting: Solidarity campaign for Transnistria (key messages + action plan).","event_type":"Meeting","program_area":"Peacebuilding","summary_1line":"Defines messaging frame (Solidarity / No One Left Behind / Positive Peace) and rapid drafting workflow.","status":"Verified","sensitivity":"Internal","primary_org":"M4P","tags":["transnistria","solidarity","campaign","messaging"]},{"event_id":"EV-2025-01-10-REVIEW","date_start":"10.01.2025","date_end":"","title":"Planned: review & adjust solidarity campaign draft (team contribution).","event_type":"Activity","program_area":"Peacebuilding","summary_1line":"Step in the rapid workflow: review/adjust draft on Friday following the meeting.","status":"Verified","sensitivity":"Internal","primary_org":"M4P","tags":["workflow","drafting"]},{"event_id":"EV-2025-01-11-PUBLISH","date_start":"11.01.2025","date_end":"","title":"Planned: publish & distribute solidarity campaign materials (Saturday).","event_type":"Campaign","program_area":"Peacebuilding","summary_1line":"Step in the rapid workflow: publish/distribute on Saturday, roles assigned afterwards.","status":"Verified","sensitivity":"Internal","primary_org":"M4P","tags":["workflow","distribution"]}],"event_source_map":[{"event_id":"EV-2022-02-26-FOUNDING","source_id":"SRC-STATUTE","relevance":"Primary evidence","pointer":"Capitolul I, pct. 1 (constituită pe 26 februarie 2022)","notes":""},{"event_id":"EV-2022-02-24-CF-LAUNCH","source_id":"SRC-CF","relevance":"Supporting","pointer":"Crowdfunding launched in February with the invasion","notes":"Exact day in Feb needs confirmation."},{"event_id":"EV-2022-03-11-DOPOMOHA","source_id":"SRC-CF","relevance":"Primary evidence","pointer":"Mentions Dopomoha.md platform (launched March 11)","notes":""},{"event_id":"EV-2023-01-01-STATUTE","source_id":"SRC-STATUTE","relevance":"Primary evidence","pointer":"Document header: Chișinău 2023","notes":"Exact adoption/signing date not in snippet; confirm later."},{"event_id":"EV-2024-12-31-DOPOMOHA-MODEL","source_id":"SRC-M4P2","relevance":"Primary evidence","pointer":"Mentions model launched by end of 2024 (caretaker + social innovation)","notes":"Exact month/day needs confirmation."},{"event_id":"EV-2025-01-01-TRANS-CRISIS","source_id":"SRC-TRANS","relevance":"Primary evidence","pointer":"Starting on January 1st: heat/hot water cuts; MGRES emergency coal","notes":""},{"event_id":"EV-2025-01-03-BLACKOUTS","source_id":"SRC-TRANS","relevance":"Primary evidence","pointer":"Rolling blackouts instituted Jan 3rd","notes":""},{"event_id":"EV-2025-01-07-8H","source_id":"SRC-TRANS","relevance":"Primary evidence","pointer":"By Jan 7th: 8 hours/day rolling blackouts","notes":""},{"event_id":"EV-2025-01-08-SEC-COUNCIL","source_id":"SRC-TRANS","relevance":"Primary evidence","pointer":"On Jan 8th: security council meeting","notes":""},{"event_id":"EV-2025-01-09-M4P-BRAINSTORM","source_id":"SRC-BRAIN","relevance":"Primary evidence","pointer":"Attendees + agenda + key messages + plan","notes":""},{"event_id":"EV-2025-01-10-REVIEW","source_id":"SRC-BRAIN","relevance":"Primary evidence","pointer":"Plan: REVIEW & ADJUST - Friday","notes":""},{"event_id":"EV-2025-01-11-PUBLISH","source_id":"SRC-BRAIN","relevance":"Primary evidence","pointer":"Plan: PUBLISH & DISTRIBUTE - Saturday","notes":""}],"claims":[{"claim_id":"CL-0001","event_id":"EV-2022-02-24-CF-LAUNCH","claim_text":"For more than a year, more than 96,000 EUR were collected in the crowdfunding campaign.","claim_type":"Metric","value_num":96000,"value_text":"more than 96,000","unit":"EUR","time_scope":"Cumulative","verification":"Partially verified","sensitivity":"Public","notes":"Exact final amount and date range should be confirmed from the original campaign page/report."},{"claim_id":"CL-0002","event_id":"EV-2022-02-24-CF-LAUNCH","claim_text":"Approximately 5% of crowdfunding spending was for communication (posters, leaflets, ads).","claim_type":"Metric","value_num":5,"value_text":"5%","unit":"%","time_scope":"Cumulative","verification":"Partially verified","sensitivity":"Public","notes":""},{"claim_id":"CL-0003","event_id":"EV-2022-02-24-CF-LAUNCH","claim_text":"Crowdfunding funds supported rent and setup of a community center (Community Center 151) offering counseling, children's activities, and a women's safe space.","claim_type":"Outcome","value_num":null,"value_text":"Community Center 151 established/operated","unit":"","time_scope":"Project period","verification":"Partially verified","sensitivity":"Public","notes":""},{"claim_id":"CL-0004","event_id":"EV-2022-03-11-DOPOMOHA","claim_text":"The Moldova Peace Initiative helped 10,000+ people in the first month, and later 19,000+ via Dopomoha.md (launched March 11).","claim_type":"Metric","value_num":19000,"value_text":"10,000+ first month; 19,000+ via Dopomoha.md","unit":"people","time_scope":"Cumulative","verification":"Partially verified","sensitivity":"Public","notes":"Numbers are stated in the crowdfunding text; should be cross-checked with annual report / platform stats."}],"claim_sources":[{"claim_id":"CL-0001","source_id":"SRC-CF","pointer":"Crowdfunding collected 96,000+ EUR","confidence":"Medium","notes":""},{"claim_id":"CL-0002","source_id":"SRC-CF","pointer":"5% communication spending","confidence":"Medium","notes":""},{"claim_id":"CL-0003","source_id":"SRC-CF","pointer":"Community Center 151 described","confidence":"Medium","notes":""},{"claim_id":"CL-0004","source_id":"SRC-CF","pointer":"10,000+ first month; 19,000+ via Dopomoha.md","confidence":"Medium","notes":""}]};
+
+    async function init() {
+      // Use embedded data (works without server) or try to fetch from external source
+      try {
+        const res = await fetch("./data.json", { cache: "no-store" });
+        DATA = await res.json();
+      } catch (e) {
+        // Fallback to embedded data if fetch fails
+        DATA = EMBEDDED_DATA;
+      }
+
+      els.lastUpdated.textContent = `Data generated: ${DATA.meta.generated_at}`;
+
+      optionize(els.event_type, uniq(DATA.events.map(e => e.event_type)));
+      optionize(els.program_area, uniq(DATA.events.map(e => e.program_area)));
+      optionize(els.status, uniq(DATA.events.map(e => e.status)));
+
+      // Sensitivity is special: you select maximum visible level
+      els.sensitivity.innerHTML = "";
+      const sensOpts = ["Public", "Internal", "Confidential"];
+      const o0 = document.createElement("option");
+      o0.value = "";
+      o0.textContent = "All (incl. Confidential)";
+      els.sensitivity.appendChild(o0);
+      for (const s of sensOpts) {
+        const o = document.createElement("option");
+        o.value = s;
+        o.textContent = `Up to: ${s}`;
+        els.sensitivity.appendChild(o);
+      }
+      els.sensitivity.value = "Internal"; // safe default
+
+      const rerender = () => renderTimeline();
+      [els.q, els.event_type, els.program_area, els.status, els.sensitivity].forEach(el => el.addEventListener("input", rerender));
+
+      els.reset.onclick = () => {
+        els.q.value = "";
+        els.event_type.value = "";
+        els.program_area.value = "";
+        els.status.value = "";
+        els.sensitivity.value = "Internal";
+        renderTimeline();
+        els.drawer.innerHTML = "<h3>Select an event</h3><div class='small'>Click an event on the left to see details.</div>";
+      };
+
+      els.toggleClaims.onclick = () => {
+        showClaims = !showClaims;
+        els.toggleClaims.textContent = `Show metrics: ${showClaims ? "ON" : "OFF"}`;
+        // refresh drawer content if something is selected: easiest is keep it simple (user can click again)
+        renderTimeline();
+      };
+
+      renderTimeline();
+    }
+
+    init().catch(err => {
+      document.body.innerHTML = `<pre style="color:#fff;padding:16px;">Failed to load data.json\n\n${err}</pre>`;
+      console.error(err);
+    });
+  </script>
+</body>
+</html>
