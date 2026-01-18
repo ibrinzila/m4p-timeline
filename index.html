@@ -1172,6 +1172,15 @@
     function updateTimelineLayout() {
       if (!els.timelineView || !els.drawer) return;
       
+      // Determine if we're in timeline view (not evidence view)
+      const isTimelineView = !els.evidenceView || els.evidenceView.style.display === "none" || 
+                             (els.viewTimeline && els.viewTimeline.classList.contains("active"));
+      
+      // Ensure timeline view is visible if we're in timeline view mode
+      if (isTimelineView) {
+        els.timelineView.style.display = "grid";
+      }
+      
       const hasEventSelected = els.drawer.innerHTML && 
         !els.drawer.innerHTML.includes("Select an event") &&
         els.drawer.innerHTML.trim().length > 100; // More than just placeholder text
@@ -1794,6 +1803,8 @@
         if (els.viewEvidence) {
           els.viewEvidence.classList.remove("active");
         }
+        // Initialize layout after view is set up
+        updateTimelineLayout();
       }
 
       // Evidence View filters and search
