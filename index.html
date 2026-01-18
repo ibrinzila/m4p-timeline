@@ -29,6 +29,12 @@
     header a{ color:#FFFFFF; text-decoration:underline; }
     main{ display:grid; grid-template-columns: 0px 1fr; gap:12px; padding:12px; transition:grid-template-columns 0.3s ease; }
     main.filters-visible{ grid-template-columns: 360px 1fr; }
+    /* Ensure the second column (timeline section) always takes available space */
+    main > section.card:last-child{ 
+      min-width: 0; 
+      width: 100%; 
+      display: block; /* Ensure it's always displayed */
+    }
     @media (max-width: 980px){ main{ grid-template-columns:1fr; } main.filters-visible{ grid-template-columns:1fr; } }
 
     .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
@@ -1170,15 +1176,30 @@
     }
 
     function updateTimelineLayout() {
-      if (!els.timelineView || !els.drawer) return;
+      if (!els.timelineView || !els.drawer) {
+        console.warn("updateTimelineLayout: Missing elements", { timelineView: !!els.timelineView, drawer: !!els.drawer });
+        return;
+      }
       
       // Determine if we're in timeline view (not evidence view)
-      const isTimelineView = !els.evidenceView || els.evidenceView.style.display === "none" || 
-                             (els.viewTimeline && els.viewTimeline.classList.contains("active"));
+      // Check multiple ways to be sure
+      const evidenceIsVisible = els.evidenceView && els.evidenceView.style.display === "block";
+      const timelineButtonIsActive = els.viewTimeline && els.viewTimeline.classList.contains("active");
+      const isTimelineView = !evidenceIsVisible && timelineButtonIsActive;
       
-      // Ensure timeline view is visible if we're in timeline view mode
+      console.log("updateTimelineLayout:", {
+        evidenceIsVisible,
+        timelineButtonIsActive,
+        isTimelineView,
+        timelineViewDisplay: els.timelineView.style.display,
+        timelineViewComputed: window.getComputedStyle(els.timelineView).display
+      });
+      
+      // CRITICAL: Always ensure timeline view is visible if we're in timeline view mode
+      // This must happen FIRST before any other logic
       if (isTimelineView) {
         els.timelineView.style.display = "grid";
+        console.log("Set timelineView display to grid");
       }
       
       const hasEventSelected = els.drawer.innerHTML && 
@@ -1187,13 +1208,17 @@
       
       const filtersVisible = document.getElementById("mainContainer")?.classList.contains("filters-visible");
       
+      console.log("Layout state:", { hasEventSelected, filtersVisible, drawerHTML: els.drawer.innerHTML.substring(0, 50) });
+      
       // When filters hidden AND no event selected: timeline expands to full width
       if (!filtersVisible && !hasEventSelected) {
         els.timelineView.classList.add("no-drawer");
         els.drawer.style.display = "none";
+        console.log("Applied no-drawer: filters hidden, no event selected");
       } else {
         els.timelineView.classList.remove("no-drawer");
         els.drawer.style.display = "block";
+        console.log("Removed no-drawer: filters visible or event selected");
       }
     }
 
@@ -1768,6 +1793,7 @@
       
       filtersToggle.onclick = () => {
         const isCollapsed = filtersSection.classList.contains("collapsed");
+        console.log("Filters toggle clicked, isCollapsed:", isCollapsed);
         if (isCollapsed) {
           filtersSection.classList.remove("collapsed");
           mainContainer.classList.add("filters-visible");
@@ -1779,6 +1805,10 @@
           filtersToggle.classList.remove("expanded");
           localStorage.setItem("filtersVisible", "false");
         }
+        // CRITICAL: Ensure timeline is visible before updating layout
+        if (els.timelineView && els.viewTimeline && els.viewTimeline.classList.contains("active")) {
+          els.timelineView.style.display = "grid";
+        }
         updateTimelineLayout(); // Update layout when filters are toggled
       };
 
@@ -1788,8 +1818,11 @@
         els.viewEvidence.onclick = switchToEvidence;
         
         // Initialize view to Timeline (ensure it's visible)
+        // CRITICAL: Set display BEFORE any other operations
+        console.log("Initializing timeline view");
         if (els.timelineView) {
           els.timelineView.style.display = "grid";
+          console.log("Set timelineView display to grid (initialization)");
         }
         if (els.evidenceView) {
           els.evidenceView.style.display = "none";
@@ -1804,7 +1837,10 @@
           els.viewEvidence.classList.remove("active");
         }
         // Initialize layout after view is set up
-        updateTimelineLayout();
+        // Use setTimeout to ensure DOM is ready
+        setTimeout(() => {
+          updateTimelineLayout();
+        }, 0);
       }
 
       // Evidence View filters and search
