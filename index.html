@@ -1142,21 +1142,19 @@
     }
 
     function switchToTimeline() {
-      if (!els.timelineView || !els.evidenceView || !els.viewTitle || !els.viewTimeline || !els.viewEvidence) return;
-      els.timelineView.style.display = "grid";
-      els.evidenceView.style.display = "none";
-      els.viewTitle.textContent = "Timeline by Phases";
-      els.viewTimeline.classList.add("active");
-      els.viewEvidence.classList.remove("active");
+      if (els.timelineView) els.timelineView.style.display = "grid";
+      if (els.evidenceView) els.evidenceView.style.display = "none";
+      if (els.viewTitle) els.viewTitle.textContent = "Timeline by Phases";
+      if (els.viewTimeline) els.viewTimeline.classList.add("active");
+      if (els.viewEvidence) els.viewEvidence.classList.remove("active");
     }
 
     function switchToEvidence() {
-      if (!els.timelineView || !els.evidenceView || !els.viewTitle || !els.viewTimeline || !els.viewEvidence) return;
-      els.timelineView.style.display = "none";
-      els.evidenceView.style.display = "block";
-      els.viewTitle.textContent = "Evidence View";
-      els.viewTimeline.classList.remove("active");
-      els.viewEvidence.classList.add("active");
+      if (els.timelineView) els.timelineView.style.display = "none";
+      if (els.evidenceView) els.evidenceView.style.display = "block";
+      if (els.viewTitle) els.viewTitle.textContent = "Evidence View";
+      if (els.viewTimeline) els.viewTimeline.classList.remove("active");
+      if (els.viewEvidence) els.viewEvidence.classList.add("active");
       if (DATA && DATA.sources && els.evidenceTableBody) {
         renderEvidenceView();
       }
@@ -1723,12 +1721,26 @@
       };
 
       // View toggle buttons
-      if (els.viewTimeline && els.viewEvidence) {
+      if (els.viewTimeline && els.viewEvidence && els.timelineView && els.evidenceView) {
         els.viewTimeline.onclick = switchToTimeline;
         els.viewEvidence.onclick = switchToEvidence;
         
-        // Initialize view to Timeline
-        switchToTimeline();
+        // Initialize view to Timeline (ensure it's visible)
+        if (els.timelineView) {
+          els.timelineView.style.display = "grid";
+        }
+        if (els.evidenceView) {
+          els.evidenceView.style.display = "none";
+        }
+        if (els.viewTitle) {
+          els.viewTitle.textContent = "Timeline by Phases";
+        }
+        if (els.viewTimeline) {
+          els.viewTimeline.classList.add("active");
+        }
+        if (els.viewEvidence) {
+          els.viewEvidence.classList.remove("active");
+        }
       }
 
       // Evidence View filters and search
