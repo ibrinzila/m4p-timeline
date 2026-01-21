@@ -1242,7 +1242,32 @@
       renderTimeline();
     }
 
-    // Category expand/collapse state management
+    // Category expand/collapse state management with localStorage persistence
+    const CATEGORY_STATE_KEY = "categoryExpandedState";
+    
+    function loadCategoryState() {
+      try {
+        const saved = localStorage.getItem(CATEGORY_STATE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Merge with existing state (in case of partial updates)
+          Object.assign(categoryExpanded, parsed);
+        }
+      } catch (e) {
+        console.warn("Failed to load category state from localStorage:", e);
+        // Continue with empty state (will use smart defaults)
+      }
+    }
+    
+    function saveCategoryState() {
+      try {
+        localStorage.setItem(CATEGORY_STATE_KEY, JSON.stringify(categoryExpanded));
+      } catch (e) {
+        console.warn("Failed to save category state to localStorage:", e);
+        // Continue silently - state is still in memory
+      }
+    }
+    
     function isCategoryExpanded(phaseId, quarterKey, category, hasEvents) {
       // Check saved preference first
       if (categoryExpanded[phaseId]?.[quarterKey]?.[category] !== undefined) {
@@ -1260,6 +1285,9 @@
       // Toggle
       const current = isCategoryExpanded(phaseId, quarterKey, category, true);
       categoryExpanded[phaseId][quarterKey][category] = !current;
+      
+      // Save to localStorage
+      saveCategoryState();
       
       // Re-render timeline to update UI
       renderTimeline();
@@ -1740,6 +1768,9 @@
         showError("No phases found in data. Please check Google Sheets structure and ensure Phases sheet exists.", () => fetchFreshData(true));
         return;
       }
+
+      // Load saved category expansion state from localStorage
+      loadCategoryState();
 
       // Update last updated display
       if (DATA.meta && DATA.meta.generated_at) {
