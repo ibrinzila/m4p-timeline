@@ -27,14 +27,9 @@
     header h1{ color:#FFFFFF; margin:0 0 6px 0; font-size:18px; font-weight:700; }
     header .sub{ color:rgba(255,255,255,0.9); font-size:12px; line-height:1.4; }
     header a{ color:#FFFFFF; text-decoration:underline; }
-    main{ display:grid; grid-template-columns: 0px 1fr; gap:12px; padding:12px; transition:grid-template-columns 0.3s ease; }
+    /* Layout: default is single column (full-width timeline). When filters are visible, switch to 2 columns. */
+    main{ display:grid; grid-template-columns: 1fr; gap:12px; padding:12px; transition:grid-template-columns 0.3s ease; }
     main.filters-visible{ grid-template-columns: 360px 1fr; }
-    /* Ensure the second column (timeline section) always takes available space */
-    main > section.card:last-child{ 
-      min-width: 0; 
-      width: 100%; 
-      display: block; /* Ensure it's always displayed */
-    }
     @media (max-width: 980px){ main{ grid-template-columns:1fr; } main.filters-visible{ grid-template-columns:1fr; } }
 
     .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
@@ -60,9 +55,6 @@
       transition:grid-template-columns 0.3s ease;
       width:100%;
       min-width:0;
-      min-height:200px; /* Ensure minimum height so it's always visible */
-      visibility:visible !important; /* Force visibility */
-      opacity:1 !important; /* Force opacity */
     }
     .timeline-view-wrapper.no-drawer{
       grid-template-columns: 1fr;
@@ -1185,17 +1177,13 @@
       }
       
       // Determine if we're in timeline view (not evidence view)
-      // Check multiple ways to be sure
       const evidenceIsVisible = els.evidenceView && els.evidenceView.style.display === "block";
       const timelineButtonIsActive = els.viewTimeline && els.viewTimeline.classList.contains("active");
       const isTimelineView = !evidenceIsVisible && timelineButtonIsActive;
       
-      // CRITICAL: Always ensure timeline view is visible if we're in timeline view mode
-      // This must happen FIRST before any other logic
+      // Ensure timeline view is visible if we're in timeline view mode
       if (isTimelineView) {
         els.timelineView.style.display = "grid";
-        // Force reflow to ensure browser recalculates layout
-        els.timelineView.offsetHeight; // Trigger reflow
       }
       
       const hasEventSelected = els.drawer.innerHTML && 
@@ -1212,28 +1200,15 @@
         els.timelineView.classList.remove("no-drawer");
         els.drawer.style.display = "block";
       }
-      
-      // Force a final reflow to ensure everything is rendered
-      requestAnimationFrame(() => {
-        els.timelineView.offsetHeight; // Trigger reflow
-      });
     }
 
     function switchToTimeline() {
-      if (els.timelineView) {
-        els.timelineView.style.display = "grid";
-        els.timelineView.style.visibility = "visible";
-        els.timelineView.style.opacity = "1";
-        // Force reflow
-        els.timelineView.offsetHeight;
-      }
+      if (els.timelineView) els.timelineView.style.display = "grid";
       if (els.evidenceView) els.evidenceView.style.display = "none";
       if (els.viewTitle) els.viewTitle.textContent = "Timeline by Phases";
       if (els.viewTimeline) els.viewTimeline.classList.add("active");
       if (els.viewEvidence) els.viewEvidence.classList.remove("active");
-      requestAnimationFrame(() => {
-        updateTimelineLayout();
-      });
+      updateTimelineLayout();
     }
 
     function switchToEvidence() {
@@ -1809,18 +1784,7 @@
           filtersToggle.classList.remove("expanded");
           localStorage.setItem("filtersVisible", "false");
         }
-        // CRITICAL: Ensure timeline is visible before updating layout
-        if (els.timelineView && els.viewTimeline && els.viewTimeline.classList.contains("active")) {
-          els.timelineView.style.display = "grid";
-          els.timelineView.style.visibility = "visible";
-          els.timelineView.style.opacity = "1";
-          // Force immediate reflow
-          els.timelineView.offsetHeight;
-        }
-        // Use requestAnimationFrame to ensure layout update happens after browser reflow
-        requestAnimationFrame(() => {
-          updateTimelineLayout();
-        });
+        updateTimelineLayout();
       };
 
       // View toggle buttons
@@ -1832,10 +1796,6 @@
         // CRITICAL: Set display BEFORE any other operations
         if (els.timelineView) {
           els.timelineView.style.display = "grid";
-          els.timelineView.style.visibility = "visible";
-          els.timelineView.style.opacity = "1";
-          // Force reflow immediately
-          els.timelineView.offsetHeight;
         }
         if (els.evidenceView) {
           els.evidenceView.style.display = "none";
