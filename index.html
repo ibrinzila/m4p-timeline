@@ -176,7 +176,11 @@
       display:flex; 
       align-items:center; 
       gap:8px;
+      cursor:pointer;
+      user-select:none;
+      transition:opacity 0.2s;
     }
+    .swimlane-header:hover{ opacity:0.8; }
     .swimlane-header.phase-2{ color:var(--green); }
     .swimlane-header.phase-3{ color:var(--red); }
     .swimlane-header::before{ 
@@ -193,17 +197,27 @@
       opacity:0.6;
     }
     .swimlane-header.empty::before{ background:var(--line); }
+    .swimlane-toggle{ 
+      font-size:10px; 
+      opacity:0.7; 
+      margin-right:4px;
+      transition:transform 0.2s;
+      display:inline-block;
+    }
+    .swimlane.collapsed .swimlane-toggle{ transform:rotate(-90deg); }
     .swimlane-events{ 
       display:flex; 
       gap:8px; 
       flex-wrap:wrap;
     }
+    .swimlane.collapsed .swimlane-events{ display:none; }
     .swimlane-empty{ 
       color:var(--muted); 
       font-size:11px; 
       font-style:italic; 
       padding-left:28px;
     }
+    .swimlane.collapsed .swimlane-empty{ display:none; }
 
     /* Event Card */
     .event-card{ 
@@ -546,6 +560,7 @@
     let CONFIG = null;
     let showClaims = false;
     const phaseExpanded = {}; // Track which phases are expanded
+    const categoryExpanded = {}; // Track which categories are expanded: { phaseId: { quarterKey: { category: bool } } }
     let isLoading = false;
     let lastFetchError = null;
 
@@ -1227,6 +1242,29 @@
       renderTimeline();
     }
 
+    // Category expand/collapse state management
+    function isCategoryExpanded(phaseId, quarterKey, category, hasEvents) {
+      // Check saved preference first
+      if (categoryExpanded[phaseId]?.[quarterKey]?.[category] !== undefined) {
+        return categoryExpanded[phaseId][quarterKey][category];
+      }
+      // Smart default: expand if has events, collapse if empty
+      return hasEvents;
+    }
+
+    function toggleCategory(phaseId, quarterKey, category) {
+      // Initialize nested structure if needed
+      if (!categoryExpanded[phaseId]) categoryExpanded[phaseId] = {};
+      if (!categoryExpanded[phaseId][quarterKey]) categoryExpanded[phaseId][quarterKey] = {};
+      
+      // Toggle
+      const current = isCategoryExpanded(phaseId, quarterKey, category, true);
+      categoryExpanded[phaseId][quarterKey][category] = !current;
+      
+      // Re-render timeline to update UI
+      renderTimeline();
+    }
+
     function renderTimeline() {
       if (!DATA || !DATA.events) {
         console.error("Cannot render: DATA or DATA.events is missing", DATA);
@@ -1327,12 +1365,27 @@
           // Swimlanes for each program area
           allAreas.forEach(area => {
             const eventsInArea = quarter.programAreas.get(area) || [];
+            const hasEvents = eventsInArea.length > 0;
+            const isExpanded = isCategoryExpanded(phase.phase_id, quarterKey, area, hasEvents);
+            
             const swimlane = document.createElement("div");
-            swimlane.className = "swimlane";
+            swimlane.className = `swimlane ${isExpanded ? "" : "collapsed"}`;
             
             const laneHeader = document.createElement("div");
-            laneHeader.className = `swimlane-header ${phaseClass} ${eventsInArea.length === 0 ? "empty" : ""}`;
-            laneHeader.textContent = area;
+            laneHeader.className = `swimlane-header ${phaseClass} ${!hasEvents ? "empty" : ""}`;
+            laneHeader.onclick = () => toggleCategory(phase.phase_id, quarterKey, area);
+            
+            // Add toggle icon
+            const toggleIcon = document.createElement("span");
+            toggleIcon.className = "swimlane-toggle";
+            toggleIcon.textContent = isExpanded ? "▼" : "▶";
+            laneHeader.appendChild(toggleIcon);
+            
+            // Add category name with event count
+            const categoryName = document.createElement("span");
+            categoryName.textContent = area + (hasEvents ? ` (${eventsInArea.length} event${eventsInArea.length !== 1 ? "s" : ""})` : "");
+            laneHeader.appendChild(categoryName);
+            
             swimlane.appendChild(laneHeader);
             
             if (eventsInArea.length === 0) {
